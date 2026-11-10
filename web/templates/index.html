@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plantamigo</title>
+  <style>
+    {% include 'style.css' %}
+</style>
+</head>
+<body>
+    <header>
+    <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
+
+    <nav class="menu">
+        <a href="#" class="activo">Planta</a>
+        <a href="#">Chatea</a>
+        <a href="#">Semana</a>
+        <a href="#">Tienda</a>
+    </nav>
+
+    <button class="usuario" title="Perfil">👤</button>
+    </header>
+
+  <h1>Estadísticas actuales</h1>
+
+  <section class="tarjetas">
+    <div class="tarjeta">
+      <h2>Temperatura</h2>
+      <div class="icono" id="temp-icono">⏳</div>
+      <div class="valor" id="temp-valor">--°</div>
+      <div class="mensaje" id="temp-mensaje">Leyendo el sensor...</div>
+      <div class="detalle" id="temp-detalle"></div>
+    </div>
+    <div class="tarjeta"><span class="vacia">nada</span></div>
+    <div class="tarjeta"><span class="vacia">nada</span></div>
+  </section>
+
+  <div class="acciones">
+    <button id="boton-melodia" onclick="tocarMelodia()">🎵 Tocar melodía</button>
+    <div id="estado-melodia"></div>
+  </div>
+
+  <script>
+    function estadoTemperatura(t) {
+      if (t >= 30) return { icono: "🔥", mensaje: "Hace mucho calor. Deberías regar a la planta" };
+      if (t >= 25) return { icono: "☀️", mensaje: "Hace calor, vigila que la planta no se seque" };
+      if (t >= 12) return { icono: "🪴", mensaje: "La temperatura es adecuada, la planta está a gusto!" };
+      return { icono: "❄️", mensaje: "Hace frio, pon a la planta en un sitio más cálido" };
+    }
+
+    async function actualizarTemperatura() {
+      try {
+        const r = await fetch("/api/temperatura");
+        const datos = await r.json();
+
+        const e = estadoTemperatura(datos.temperatura);
+        document.getElementById("temp-icono").textContent = e.icono;
+        document.getElementById("temp-valor").textContent = datos.temperatura + "°";
+        document.getElementById("temp-mensaje").textContent = e.mensaje;
+        document.getElementById("temp-detalle").textContent =
+          datos.antiguedad_s > 30 ? `Última lectura hace ${datos.antiguedad_s} s` : "";
+      } catch (err) {
+        document.getElementById("temp-mensaje").textContent = "Sin conexión con la planta";
+      }
+    }
+
+    async function tocarMelodia() {
+      const boton = document.getElementById("boton-melodia");
+      const estado = document.getElementById("estado-melodia");
+      boton.disabled = true;
+      estado.textContent = "Sonando...";
+      try {
+        const r = await fetch("/api/melodia", { method: "POST" });
+        estado.textContent = (await r.json()).mensaje;
+      } catch (err) {
+        estado.textContent = "No se pudo conectar con la planta";
+      }
+      boton.disabled = false;
+    }
+
+    actualizarTemperatura();
+    setInterval(actualizarTemperatura, 5000); 
+  </script>
+</body>
+</html>
