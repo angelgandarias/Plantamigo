@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plantamigo · Calendario</title>
+    <style>
+    {% include 'calendar.css' %}
+</style>
+</head>
+<body>
+    <header>
+        <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
+
+        <nav class="menu">
+            <a href="#">Planta</a>
+            <a href="#">Chatea</a>
+            <a href="/calendar" class="activo">Semana</a>
+            <a href="#">Tienda</a>
+        </nav>
+
+        <button class="usuario" title="Perfil">👤</button>
+    </header>
+
+  <main>
+    <section class="calendario">
+      <div class="cabecera-mes">
+        <button class="flecha" id="mes-anterior" title="Mes anterior">‹</button>
+        <h1 id="nombre-mes">—</h1>
+        <button class="flecha" id="mes-siguiente" title="Mes siguiente">›</button>
+      </div>
+      <div class="dias-semana">
+        <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+      </div>
+      <div class="dias" id="dias"></div>
+    </section>
+
+    <section class="panel" id="panel">
+      <h2 id="panel-fecha">Elige un día</h2>
+      <div class="panel-icono" id="panel-icono">📅</div>
+      <div class="panel-texto" id="panel-texto">
+        Toca un día del calendario para ver cómo estuvo (o cómo estará) tu planta.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const LATITUD = 43.26, LONGITUD = -2.93; 
+    const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio",
+                   "Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    let mesVisible = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    let diaSeleccionado = null;
+
+    function aTexto(fecha) {            // Date -> "2026-11-12"
+      const m = String(fecha.getMonth() + 1).padStart(2, "0");
+      const d = String(fecha.getDate()).padStart(2, "0");
+      return `${fecha.getFullYear()}-${m}-${d}`;
+    }
+    function bonita(fecha) {            // Date -> "jueves, 12 de noviembre"
+      return fecha.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+    }
+
+    function dibujarCalendario() {
+      const contenedor = document.getElementById("dias");
+      contenedor.innerHTML = "";
+      const año = mesVisible.getFullYear(), mes = mesVisible.getMonth();
+      document.getElementById("nombre-mes").textContent = `${MESES[mes]} ${año}`;
+
+      // Huecos antes del día 1 (la semana empieza en lunes)
+      const huecos = (new Date(año, mes, 1).getDay() + 6) % 7;
+      for (let i = 0; i < huecos; i++) contenedor.appendChild(document.createElement("span"));
+
+      const diasDelMes = new Date(año, mes + 1, 0).getDate();
+      for (let d = 1; d <= diasDelMes; d++) {
+        const fecha = new Date(año, mes, d);
+        const boton = document.createElement("button");
+        boton.className = "dia";
+        boton.textContent = d;
+        if (fecha.getTime() === hoy.getTime()) boton.classList.add("hoy");
+        if (fecha < hoy) boton.classList.add("pasado");
+        if (diaSeleccionado && fecha.getTime() === diaSeleccionado.getTime()) boton.classList.add("seleccionado");
+        boton.onclick = () => seleccionarDia(fecha);
+        contenedor.appendChild(boton);
+      }
+    }
+
+    document.getElementById("mes-anterior").onclick = () => {
+      mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() - 1, 1);
+      dibujarCalendario();
+    };
+    document.getElementById("mes-siguiente").onclick = () => {
+      mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 1);
+      dibujarCalendario();
+    };
+
+    // ---------- Panel del día ----------
+    function mostrar(icono, html) {
+      document.getElementById("panel-icono").textContent = icono;
+      document.getElementById("panel-texto").innerHTML = html;
+    }
+
+    // Los nombres de las plantas vienen de la base de datos: se escapan antes de pintarlos
+    function esc(texto) {
+      const p = document.createElement("p");
+      p.textContent = texto;
+      return p.innerHTML;
+    }
+    function num(valor, unidad) {
+      return valor === null ? "—" : `${valor}${unidad}`;
+    }
+
+    function pintarPlanta(p) {
+      return `<div class="planta-dato">
+        <h3>${esc(p.nombre)} <small>${esc(p.tipo)}</small></h3>
+        <ul>
+          <li>Temperatura: <b>${num(p.temperatura_media, "°")}</b> (${num(p.temperatura_min, "°")} – ${num(p.temperatura_max, "°")})</li>
+          <li>Humedad: <b>${num(p.humedad_media, " %")}</b></li>
+          <li>Luz: <b>${num(p.luz_media, " lux")}</b></li>
+          <li>Aire: <b>${num(p.calidad_aire_media, " ppm")}</b></li>
+        </ul>
+        <small>${p.lecturas} lecturas</small>
+      </div>`;
+    }
+
+    async function seleccionarDia(fecha) {
+      diaSeleccionado = fecha;
+      dibujarCalendario();
+      document.getElementById("panel-fecha").textContent = bonita(fecha);
+      mostrar("⏳", "Cargando...");
+
+      // 1) ¿Responde el servidor de la Raspberry?
+      let respuesta;
+      try {
+        respuesta = await fetch(`/api/dia/${aTexto(fecha)}`);
+      } catch {
+        mostrar("📡", "No puedo conectar con la planta.");
+        return;
+      }
+      const datos = await respuesta.json().catch(() => null);
+
+      // 2) El servidor responde, pero la base de datos falla
+      if (!respuesta.ok) {
+        const icono = datos && datos.error === "conexion" ? "🔌" : "⚠️";
+        mostrar(icono, esc((datos && datos.mensaje) || "El servidor ha dado un error inesperado"));
+        return;
+      }
+
+      // 3) Conexión correcta, pero ese día no hay lecturas
+      if (!datos.hay_datos) {
+        mostrar("📭", "No hay nada guardado de este día.");
+        return;
+      }
+
+      mostrar("📊", datos.plantas.map(pintarPlanta).join(""));
+    }
+  </script>
+</body>
+</html>

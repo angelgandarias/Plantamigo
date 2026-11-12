@@ -9,6 +9,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sensores.buzzer import melodia
 from sensores.temperature import buscar_sensor, leer_temperatura
 from sensores.moisture import abrir_bus, leer_dos_humedades
+from basedatos.consultas import datos_del_dia, ErrorConexionBD, ErrorConsultaBD
+from datetime import datetime
  
 INTERVALO = 5 
  
@@ -52,6 +54,10 @@ def formatear_dato_y_enviar():
 @app.route("/")
 def inicio():
     return render_template("index.html")
+
+@app.route("/calendar")
+def calendar():
+    return render_template("calendar.html")
  
  
 @app.route("/api/temperatura")
@@ -73,6 +79,23 @@ def tocar_melodia():
     finally:
         sonando.release()
  
+@app.route("/api/dia/<fecha>")
+def api_dia(fecha):
+    """Resumen de un día (AAAA-MM-DD) desde la base de datos."""
+    try:
+        dia = datetime.strptime(fecha, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify(error="fecha", mensaje="Fecha no válida, usa AAAA-MM-DD"), 400
+    try:
+        return jsonify(datos_del_dia(dia))
+    except ErrorConexionBD as error:
+        print(f"[BD] No se pudo conectar: {error}")
+        return jsonify(error="conexion",
+                       mensaje="No se ha podido conectar con la base de datos"), 503
+    except ErrorConsultaBD as error:
+        print(f"[BD] Error en la consulta: {error}")
+        return jsonify(error="consulta",
+                       mensaje="La base de datos ha dado un error al consultar"), 500
  
 if __name__ == "__main__":
     threading.Thread(target=lector_en_segundo_plano, daemon=True).start()
