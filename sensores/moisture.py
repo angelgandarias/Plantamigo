@@ -1,6 +1,6 @@
 """Lectura de sensores de humedad del suelo (Grove Moisture Sensor, analógico).
 
-Se leen a través del ADC del Grove Base Hat (I2C, dirección 0x04).
+Se leen a través del ADC del Grove Base Hat (I2C, dirección 0x08).
 Conectados a los puertos analógicos A2 y A4 (A0 está ocupado por el sensor de luz;
 cada puerto analógico usa dos canales, por eso se salta de dos en dos).
 
@@ -14,7 +14,7 @@ Necesita I2C activado (sudo raspi-config -> Interfaces -> I2C) y
 from time import sleep, strftime
 
 I2C_BUS = 1
-DIRECCION_HAT = 0x04
+DIRECCION_HAT = 0x08  # detectado en la Pi (otras versiones del hat usan 0x04)
 REG_RAW = 0x10  # registro base de lectura en bruto (0x10 + canal)
 
 CANAL_1 = 2  # puerto A2
@@ -95,6 +95,21 @@ if __name__ == "__main__":
     bus = abrir_bus()
     if bus is None:
         print("No puedo abrir el bus I2C (¿falta 'pip install smbus2' o activar I2C?)")
+        raise SystemExit(1)
+
+    # Diagnóstico: muestra el error real y qué dispositivos hay en el bus
+    try:
+        bus.read_word_data(DIRECCION_HAT, REG_RAW + CANAL_1)
+    except OSError as error:
+        print(f"Error leyendo el ADC en 0x{DIRECCION_HAT:02x}: {error!r}")
+        encontrados = []
+        for direccion in range(0x03, 0x78):
+            try:
+                bus.read_byte(direccion)
+                encontrados.append(f"0x{direccion:02x}")
+            except OSError:
+                pass
+        print(f"Dispositivos en el bus I2C {I2C_BUS}: {encontrados or 'ninguno'}")
         raise SystemExit(1)
 
     print(f"Leyendo humedad en A{CANAL_1} y A{CANAL_2} cada {INTERVALO} s (Ctrl+C para parar)")
