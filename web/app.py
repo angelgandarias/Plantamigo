@@ -7,12 +7,14 @@ from flask import Flask, jsonify, render_template
  
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sensores.buzzer import melodia
-from sensores.temperature import buscar_sensor, leer_temperatura 
+from sensores.temperature import buscar_sensor, leer_temperatura
+from sensores.moisture import abrir_bus, leer_dos_humedades
  
 INTERVALO = 5 
  
 app = Flask(__name__)
 sonando = threading.Lock()
+BUS_I2C = abrir_bus()  # ADC del hat (humedad en A2 y A4), se abre una sola vez
 
 ultima = {"temperatura": None, "hora": None}
  
@@ -28,8 +30,25 @@ def lector_en_segundo_plano():
             ultima["temperatura"] = round(temperatura, 1)
             ultima["hora"] = time.time()
         time.sleep(INTERVALO)
- 
- 
+
+# Funciones de estadisticas 
+def lectura_simultanea_datos_brutos()-> tuple[float, float]:
+    # Devuelve una tupla con la humedad (%) de los dos sensores (None si alguno falla)
+    return leer_dos_humedades(BUS_I2C)
+def obtener_media(tupla_datos:tuple[float, float])-> float:
+    total:float = 0
+    elementos = 0
+    for dato in tupla_datos:
+        elementos += 1
+        total += dato
+    return total / elementos
+
+def formatear_dato_y_enviar():
+    # TODO: Supongo que aqui deberia de formatear ese dato y enviarlo a la web 
+    # Con formatear se refiere a json o algun otro formato?
+    # para enviar supongo que debo hacer algun POST?
+    return 
+
 @app.route("/")
 def inicio():
     return render_template("index.html")
