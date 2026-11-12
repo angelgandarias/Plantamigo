@@ -28,10 +28,14 @@ def lector_en_segundo_plano():
         return
     while True:
         temperatura = leer_temperatura(carpeta)
+        light = leer_luz()
         if temperatura is not None:
             ultima["temperatura"] = round(temperatura, 1)
-            ultima["hora"] = time.time()
+        if light is not None:
+            ultima["luz"] = light
+        ultima["hora"] = time.time()
         time.sleep(INTERVALO)
+ 
 
 # Funciones de estadisticas 
 def lectura_simultanea_datos_brutos()-> tuple[float, float]:
@@ -65,6 +69,13 @@ def api_temperatura():
     hora = ultima["hora"]
     antiguedad = None if hora is None else round(time.time() - hora)
     return jsonify(temperatura=ultima["temperatura"], antiguedad_s=antiguedad)
+
+
+@app.route("/api/luz")
+def api_luz():
+    hora = ultima["hora"]
+    antiguedad = None if hora is None else round(time.time() - hora)
+    return jsonify(temperatura=ultima["luz"], antiguedad_s=antiguedad)
  
  
 @app.route("/api/melodia", methods=["POST"])

@@ -7,8 +7,15 @@ INTERVALO = 5      # segundos entre lecturas
 
 light_sensor = GroveLightSensor(PIN)
 
-while True:
+
+def leer_luz():
+    """Devuelve (porcentaje, valor_bruto) de luz."""
     valor = light_sensor.light
     porcentaje = min(max(valor / VALOR_MAX * 100, 0), 100)
+    return porcentaje, valor
+
+'''
+while True:
+    porcentaje, valor = leer_luz()
     print(f"Luz: {porcentaje:.1f}% (valor bruto: {valor})")
-    time.sleep(INTERVALO)
+    time.sleep(INTERVALO)'''

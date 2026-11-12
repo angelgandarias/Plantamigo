@@ -49,6 +49,13 @@
       return { icono: "❄️", mensaje: "Hace frio, pon a la planta en un sitio más cálido" };
     }
 
+    function estadoLuz(l) {
+      if (t >= 60) return { icono: "🔥", mensaje: "Hace mucha." };
+      if (t >= 30) return { icono: "☀️", mensaje: "Hace algo." };
+      if (t >= 12) return { icono: "🪴", mensaje: "Hace poca." };
+      return { icono: "❄️", mensaje: "No hay" };
+    }
+
     async function actualizarTemperatura() {
       try {
         const r = await fetch("/api/temperatura");
@@ -62,6 +69,22 @@
           datos.antiguedad_s > 30 ? `Última lectura hace ${datos.antiguedad_s} s` : "";
       } catch (err) {
         document.getElementById("temp-mensaje").textContent = "Sin conexión con la planta";
+      }
+    }
+
+    async function actualizarLuz() {
+      try {
+        const r = await fetch("/api/luz");
+        const datos = await r.json();
+
+        const e = estadoLuz(datos.luz);
+        document.getElementById("luz-icono").textContent = e.icono;
+        document.getElementById("luz-valor").textContent = datos.luz + "%";
+        document.getElementById("luz-mensaje").textContent = e.mensaje;
+        document.getElementById("luz-detalle").textContent =
+          datos.antiguedad_s > 30 ? `Última lectura hace ${datos.antiguedad_s} s` : "";
+      } catch (err) {
+        document.getElementById("luz-mensaje").textContent = "Sin conexión con la planta";
       }
     }
 
@@ -80,7 +103,9 @@
     }
 
     actualizarTemperatura();
-    setInterval(actualizarTemperatura, 5000); 
+    actualizarLuz();
+    setInterval(actualizarTemperatura, 5000);
+    setInterval(actualizarLuz, 5000);  
   </script>
 </body>
 </html>
