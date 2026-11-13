@@ -75,7 +75,7 @@ def api_temperatura():
 def api_luz():
     hora = ultima["hora"]
     antiguedad = None if hora is None else round(time.time() - hora)
-    return jsonify(temperatura=ultima["luz"], antiguedad_s=antiguedad)
+    return jsonify(luz=ultima["luz"], antiguedad_s=antiguedad)
  
  
 @app.route("/api/melodia", methods=["POST"])
