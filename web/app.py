@@ -8,6 +8,7 @@ from flask import Flask, jsonify, render_template
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sensores.buzzer import melodia
 from sensores.temperature import buscar_sensor, leer_temperatura
+from sensores.lightSensor import leer_luz
 from sensores.moisture import abrir_bus, leer_dos_humedades
 from basedatos.consultas import datos_del_dia, ErrorConexionBD, ErrorConsultaBD
 from datetime import datetime
