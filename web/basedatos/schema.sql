@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS datos_planta (
     id_planta    INTEGER      NOT NULL REFERENCES plantas (id_planta) ON DELETE CASCADE,
     fecha        TIMESTAMPTZ  NOT NULL DEFAULT now(),
     temperatura  NUMERIC(4,1),                                          -- °C (DHT11)
-    humedad      NUMERIC(4,1) CHECK (humedad BETWEEN 0 AND 100),        -- % HR (DHT11)
-    luz          REAL         CHECK (luz >= 0),                         -- lux (BH1750)
+    humedad      NUMERIC(4,1) CHECK (humedad BETWEEN 0 AND 100),        -- % humedad del suelo (media de los 2 sensores Grove, A2 y A4)
+    luz          REAL         CHECK (luz >= 0),                         -- % de luz (Grove Light Sensor, A0)
     calidad_aire REAL         CHECK (calidad_aire >= 0),                -- ppm aprox. (MQ135)
     --La PK también sirve de índice para consultar el histórico de una planta por fechas
     PRIMARY KEY (id_planta, fecha)

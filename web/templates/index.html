@@ -39,7 +39,13 @@
       <div class="mensaje" id="luz-mensaje">Leyendo el sensor...</div>
       <div class="detalle" id="luz-detalle"></div>
     </div>
-    <div class="tarjeta"><span class="vacia">nada</span></div>
+    <div class="tarjeta">
+      <h2>Humedad</h2>
+      <div class="icono" id="hum-icono">⏳</div>
+      <div class="valor" id="hum-valor">--%</div>
+      <div class="mensaje" id="hum-mensaje">Leyendo los sensores...</div>
+      <div class="detalle" id="hum-detalle"></div>
+    </div>
   </section>
 
   <div class="acciones">
@@ -95,6 +101,33 @@
       }
     }
 
+    // Umbrales orientativos: ajústalos al calibrar los sensores
+    function estadoHumedad(h) {
+      if (h >= 70) return { icono: "💦", mensaje: "La tierra está muy húmeda, no hace falta regar" };
+      if (h >= 35) return { icono: "🪴", mensaje: "La humedad es adecuada, la planta está a gusto!" };
+      return { icono: "🏜️", mensaje: "La tierra está seca, ¡hay que regar a la planta!" };
+    }
+
+    async function actualizarHumedad() {
+      try {
+        const r = await fetch("/api/humedad");
+        const datos = await r.json();
+
+        if (datos.humedad === null) {
+          document.getElementById("hum-mensaje").textContent = "Sin lectura de los sensores";
+          return;
+        }
+        const e = estadoHumedad(datos.humedad);
+        document.getElementById("hum-icono").textContent = e.icono;
+        document.getElementById("hum-valor").textContent = datos.humedad + "%";
+        document.getElementById("hum-mensaje").textContent = e.mensaje;
+        document.getElementById("hum-detalle").textContent =
+          datos.antiguedad_s > 30 ? `Última lectura hace ${datos.antiguedad_s} s` : "";
+      } catch (err) {
+        document.getElementById("hum-mensaje").textContent = "Sin conexión con la planta";
+      }
+    }
+
     async function tocarMelodia() {
       const boton = document.getElementById("boton-melodia");
       const estado = document.getElementById("estado-melodia");
@@ -111,6 +144,8 @@
 
     actualizarTemperatura();
     actualizarLuz();
+    actualizarHumedad();
+    setInterval(actualizarHumedad, 5000);
     setInterval(actualizarTemperatura, 5000);
     setInterval(actualizarLuz, 5000);  
   </script>

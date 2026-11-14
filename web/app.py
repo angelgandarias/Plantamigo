@@ -9,7 +9,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sensores.buzzer import melodia
 from sensores.temperature import buscar_sensor, leer_temperatura
 from sensores.lightSensor import leer_luz
-from sensores.moisture import abrir_bus, leer_dos_humedades
+from sensores.moisture import abrir_bus, leer_dos_humedades, media
+from basedatos import guardar_lectura
 from basedatos.consultas import datos_del_dia, ErrorConexionBD, ErrorConsultaBD
 from datetime import datetime
  
@@ -20,7 +21,11 @@ sonando = threading.Lock()
 BUS_I2C = abrir_bus()  # ADC del hat (humedad en A2 y A4), se abre una sola vez
 
 ultima = {"temperatura": None, "hora": None, "luz": None}
- 
+
+# --- Humedad del suelo (media de los 2 sensores en A2 y A4) ---
+ultima_humedad = {"humedad": None, "hora": None}
+INTERVALO_GUARDADO_HUMEDAD = 300  # segundos entre guardados en la BD (5 min)
+ID_PLANTA = os.environ.get("ID_PLANTA")  # planta a la que se asignan las lecturas
 
 def lector_en_segundo_plano():
     carpeta = buscar_sensor()
@@ -43,12 +48,30 @@ def lectura_simultanea_datos_brutos()-> tuple[float, float]:
     # Devuelve una tupla con la humedad (%) de los dos sensores (None si alguno falla)
     return leer_dos_humedades(BUS_I2C)
 def obtener_media(tupla_datos:tuple[float, float])-> float:
-    total:float = 0
-    elementos = 0
-    for dato in tupla_datos:
-        elementos += 1
-        total += dato
-    return total / elementos
+    # Media de las humedades ignorando los sensores que fallaron (None)
+    return media(tupla_datos)
+
+
+def lector_humedad_en_segundo_plano():
+    """Lee los dos sensores, calcula la media y la guarda en memoria y (cada X min) en la BD.
+
+    Va en su propio hilo para no depender del sensor de temperatura.
+    """
+    proximo_guardado = 0
+    while True:
+        humedad = obtener_media(lectura_simultanea_datos_brutos())
+        if humedad is not None:
+            ultima_humedad["humedad"] = round(humedad, 1)
+            ultima_humedad["hora"] = time.time()
+
+            if ID_PLANTA and time.time() >= proximo_guardado:
+                try:
+                    guardar_lectura(int(ID_PLANTA), humedad=ultima_humedad["humedad"])
+                    proximo_guardado = time.time() + INTERVALO_GUARDADO_HUMEDAD
+                except Exception as error:  # BD caída: seguimos leyendo igualmente
+                    print(f"[BD] No se pudo guardar la humedad: {error}")
+                    proximo_guardado = time.time() + INTERVALO  # reintenta pronto
+        time.sleep(INTERVALO)
 
 def formatear_dato_y_enviar():
     # TODO: Supongo que aqui deberia de formatear ese dato y enviarlo a la web 
@@ -79,6 +102,13 @@ def api_luz():
     return jsonify(luz=ultima["luz"], antiguedad_s=antiguedad)
  
  
+@app.route("/api/humedad")
+def api_humedad():
+    hora = ultima_humedad["hora"]
+    antiguedad = None if hora is None else round(time.time() - hora)
+    return jsonify(humedad=ultima_humedad["humedad"], antiguedad_s=antiguedad)
+
+
 @app.route("/api/melodia", methods=["POST"])
 def tocar_melodia():
     if not sonando.acquire(blocking=False):
@@ -111,4 +141,5 @@ def api_dia(fecha):
  
 if __name__ == "__main__":
     threading.Thread(target=lector_en_segundo_plano, daemon=True).start()
+    threading.Thread(target=lector_humedad_en_segundo_plano, daemon=True).start()
     app.run(host="0.0.0.0", port=5000, threaded=True)
