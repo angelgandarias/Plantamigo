@@ -62,10 +62,11 @@
     }
 
     function estadoLuz(l) {
-      if (l >= 60) return { icono: "🔥", mensaje: "Hace mucha." };
-      if (l >= 30) return { icono: "☀️", mensaje: "Hace algo." };
-      if (l >= 12) return { icono: "🪴", mensaje: "Hace poca." };
-      return { icono: "❄️", mensaje: "No hay" };
+      //TODO: Esto deberá cambiar cuando introduzcamos los perfiles de planta
+      //TODO: Comprobar si es de noche y desactivar este menú (no tiene sentido)
+      if (l >= 40) return { icono: "🪴", mensaje: "Iluminación adecuada." };
+      if (l >= 12) return { icono: "❄️", mensaje: "Hay poca luz. Deberías mover la planta." };
+      return { icono: "❄️", mensaje: "No hay luz, ¡Mueve la planta!" };
     }
 
     async function actualizarTemperatura() {

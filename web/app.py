@@ -37,7 +37,7 @@ def lector_en_segundo_plano():
         if temperatura is not None:
             ultima["temperatura"] = round(temperatura, 1)
         if light is not None:
-            ultima["luz"] = light[0]
+            ultima["luz"] = round(light[0],1)
         ultima["hora"] = time.time()
         time.sleep(INTERVALO)
  
