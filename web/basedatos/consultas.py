@@ -1,20 +1,15 @@
 import os
+import psycopg 
 
-import psycopg  # el mismo driver que usa basedatos/__init__.py
-
-ZONA_HORARIA = "Europe/Madrid"  # el "día" del calendario es el día en España
-
+ZONA_HORARIA = "Europe/Madrid" 
 
 class ErrorConexionBD(Exception):
-    """No se ha podido conectar con la base de datos (apagada, mala contraseña...)."""
-
+    pass
 
 class ErrorConsultaBD(Exception):
-    """Hay conexión, pero la consulta ha fallado (falta una tabla, SQL mal...)."""
+    pass
 
-
-# Resumen de un día, una fila por planta. Los límites del día se calculan en hora
-# de Madrid, porque la columna "fecha" guarda el instante exacto (TIMESTAMPTZ).
+# Consulta SQL
 SQL_DIA = """
     SELECT p.nombre_planta,
            p.tipo_planta,
@@ -33,47 +28,45 @@ SQL_DIA = """
     ORDER BY p.nombre_planta
 """.format(zona=ZONA_HORARIA)
 
-
-def _numero(valor):
-    """NUMERIC llega como Decimal; el JSON necesita float. NULL -> None."""
+# Para cambiar de 
+def numero(valor):
     return None if valor is None else float(valor)
 
-
 def datos_del_dia(dia):
-    """Devuelve el resumen de un día (objeto date) para cada planta.
-
-    {"fecha": "2026-11-12", "hay_datos": True, "plantas": [ {...}, ... ]}
-
-    Lanza ErrorConexionBD si no hay conexión y ErrorConsultaBD si la consulta falla.
-    """
+    # Trata de conectarse a la base de datos
     try:
         conexion = psycopg.connect(os.environ.get("DATABASE_URL", ""), connect_timeout=3)
     except psycopg.Error as error:
         raise ErrorConexionBD(error) from error
 
+    # Busca en la BD por el día y pilla todas las filas resultantes
     try:
         with conexion.cursor() as cursor:
             cursor.execute(SQL_DIA, {"dia": dia})
             filas = cursor.fetchall()
-    except psycopg.OperationalError as error:  # se cayó la conexión a mitad
+    except psycopg.OperationalError as error: 
         raise ErrorConexionBD(error) from error
     except psycopg.Error as error:
         raise ErrorConsultaBD(error) from error
     finally:
         conexion.close()
 
+    # Traduce las filas extraidas de la BD a un diccionario para que sea más facil de recuperar
     plantas = [
         {
             "nombre": f[0],
             "tipo": f[1],
             "lecturas": f[2],
-            "temperatura_media": _numero(f[3]),
-            "temperatura_min": _numero(f[4]),
-            "temperatura_max": _numero(f[5]),
-            "humedad_media": _numero(f[6]),
-            "luz_media": _numero(f[7]),
-            "calidad_aire_media": _numero(f[8]),
+            "temperatura_media": numero(f[3]),
+            "temperatura_min": numero(f[4]),
+            "temperatura_max": numero(f[5]),
+            "humedad_media": numero(f[6]),
+            "luz_media": numero(f[7]),
+            "calidad_aire_media": numero(f[8]),
         }
+
         for f in filas
     ]
+
+    # Devuelve los datos
     return {"fecha": dia.isoformat(), "hay_datos": bool(plantas), "plantas": plantas}

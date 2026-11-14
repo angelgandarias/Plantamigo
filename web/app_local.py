@@ -62,6 +62,17 @@ class GroveLightSensorFalso:
     def light(self):
         return random.randint(200, 900)
 
+# ---------- Temperatura: seeed_dht falso (para que temperature.py se pueda importar) ----------
+class DHTFalso:
+    def __init__(self, modelo, pin):
+        self.modelo = modelo
+        self.pin = pin
+
+    def read(self):
+        return random.uniform(40, 60), random.uniform(18, 26)  # (humedad, temperatura)
+
+
+_modulo("seeed_dht", DHT=DHTFalso)
 
 _modulo("grove")
 _modulo("grove.grove_light_sensor_v1_2", GroveLightSensor=GroveLightSensorFalso)

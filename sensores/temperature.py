@@ -1,46 +1,48 @@
 import glob
+from seeed_dht import DHT
 from time import sleep, strftime
 
-INTERVALO = 0.5  # segundos entre lecturas
+# Puerto digital (D5) donde está conectado el sensor
+PIN = 5  
+# Cada cuanto tiempo hace una medición de temperatura
+INTERVALO = 0.5
+# Crea el objeto del sensor
+sensor = DHT("11", PIN)
 
-
-def buscar_sensor():
-    """Busca la carpeta del sensor DHT que crea el driver del kernel."""
-    for carpeta in glob.glob("/sys/bus/iio/devices/iio:device*"):
-        try:
-            with open(f"{carpeta}/name") as f:
-                if f.read().strip().startswith("dht11"):
-                    return carpeta
-        except OSError:
-            pass
-    return None
-
-
-def leer_temperatura(carpeta):
-    """Devuelve la temperatura en °C, o None si la lectura falla."""
+def leer_temperatura():
+    """Devuelve la temperatura en °C o "None" si la lectura falla."""
     try:
-        with open(f"{carpeta}/in_temp_input") as f:
-            return int(f.read()) / 1000  # viene en milésimas de grado
-    except OSError:
+        datos = sensor.read()
+
+        # Solo nos interesa el segundo campo porque el primero es la humedad
+        temperatura = datos[1]
+
+        # Si falla la lectura...
+        if temperatura is None:
+            return None
+        # Si no...
+        else:
+            return temperatura
+
+    # Capturar otros errores que puedan ocurrir
+    except Exception:
         return None
 
-
+# Función principal
 if __name__ == "__main__":
-    carpeta = buscar_sensor()
-    if carpeta is None:
-        print("No encuentro el sensor.")
-        print("Falta 'dtoverlay=dht11,gpiopin=5' en /boot/firmware/config.txt o reiniciar.")
-        raise SystemExit(1)
-
-    print(f"Leyendo temperatura cada {INTERVALO} s (Ctrl+C para parar)")
+    print(f"Leyendo temperatura cada {INTERVALO}")
     try:
+        # El bucle que tiene la lógica de lo que se imprime por pantalla
         while True:
-            temperatura = leer_temperatura(carpeta)
+            temperatura = leer_temperatura()
             hora = strftime("%H:%M:%S")
+
             if temperatura is None:
-                print(f"[{hora}] Lectura fallida, reintento en {INTERVALO} s")
+                print(f"[{hora}] Lectura fallida, reintento en {INTERVALO}")
             else:
                 print(f"[{hora}] Temperatura: {temperatura:.1f} °C")
             sleep(INTERVALO)
+
+    # Si detiene forzosamente
     except KeyboardInterrupt:
         print("\nParado.")

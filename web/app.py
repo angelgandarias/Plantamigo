@@ -6,7 +6,7 @@ import time
 from flask import Flask, jsonify, render_template
  
 from sensores.buzzer import tocar
-from sensores.temperature import buscar_sensor, leer_temperatura
+from sensores.temperature import leer_temperatura
 from sensores.lightSensor import leer_luz
 from sensores.moisture import abrir_bus, leer_dos_humedades, media
 from basedatos import guardar_lectura
@@ -27,12 +27,8 @@ INTERVALO_GUARDADO_HUMEDAD = 300  # segundos entre guardados en la BD (5 min)
 ID_PLANTA = os.environ.get("ID_PLANTA")  # planta a la que se asignan las lecturas
 
 def lector_en_segundo_plano():
-    carpeta = buscar_sensor()
-    if carpeta is None:
-        print("AVISO: no encuentro el sensor de temperatura (¿falta el dtoverlay?)")
-        return
     while True:
-        temperatura = leer_temperatura(carpeta)
+        temperatura = leer_temperatura()
         light = leer_luz()
         if temperatura is not None:
             ultima["temperatura"] = round(temperatura, 1)
@@ -119,24 +115,28 @@ def tocar_melodia():
         return jsonify(mensaje=f"Error con el buzzer: {error}"), 500
     finally:
         sonando.release()
- 
+
+
+# Consular a la BD por los datos de la planta segun la fecha
 @app.route("/api/dia/<fecha>")
 def api_dia(fecha):
-    """Resumen de un día (AAAA-MM-DD) desde la base de datos."""
+
+    # Convertir la fecha en formato AÑO-MES-DÍA en una que Python pueda leer
     try:
         dia = datetime.strptime(fecha, "%Y-%m-%d").date()
     except ValueError:
-        return jsonify(error="fecha", mensaje="Fecha no válida, usa AAAA-MM-DD"), 400
+        return jsonify(error="fecha", mensaje="Fecha no válida"), 400
+
+    # Llama a datos_del_dia de consultas.py que consulta Postgres y devuelve el resultado como JSON al navegador
     try:
         return jsonify(datos_del_dia(dia))
     except ErrorConexionBD as error:
         print(f"[BD] No se pudo conectar: {error}")
-        return jsonify(error="conexion",
-                       mensaje="No se ha podido conectar con la base de datos"), 503
+        return jsonify(error="conexion", mensaje="No se ha podido conectar con la base de datos"), 503
     except ErrorConsultaBD as error:
         print(f"[BD] Error en la consulta: {error}")
-        return jsonify(error="consulta",
-                       mensaje="La base de datos ha dado un error al consultar"), 500
+        return jsonify(error="consulta", mensaje="La base de datos ha dado un error al consultar"), 500
+
  
 if __name__ == "__main__":
     threading.Thread(target=lector_en_segundo_plano, daemon=True).start()

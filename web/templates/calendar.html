@@ -5,33 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Plantamigo · Calendario</title>
     <style>
-    {% include 'calendar.css' %}
-</style>
+      {% include 'calendar.css' %}
+      {% include 'common.css' %}
+    </style>
+
 </head>
 <body>
-    <header>
-        <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
 
-        <nav class="menu">
-            <a href="/">Planta</a>
-            <a href="#">Chatea</a>
-            <a href="/calendar" class="activo">Semana</a>
-            <a href="#">Tienda</a>
-        </nav>
+  <header>
+    <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
 
-        <button class="usuario" title="Perfil">👤</button>
-    </header>
+    <nav class="menu">
+      <a href="/">Planta</a>
+      <a href="#" onclick="return false">Chatea</a>
+      <a href="/" class="activo">Semana</a>
+      <a href="#" onclick="return false">Tienda</a>
+    </nav>
+
+    <button class="usuario" title="Perfil">👤</button>
+  </header>
 
   <main>
     <section class="calendario">
       <div class="cabecera-mes">
-        <button class="flecha" id="mes-anterior" title="Mes anterior">‹</button>
-        <h1 id="nombre-mes">—</h1>
-        <button class="flecha" id="mes-siguiente" title="Mes siguiente">›</button>
+        <button class="flecha" id="mes-anterior">‹</button>
+        <h1 id="nombre-mes"></h1>
+        <button class="flecha" id="mes-siguiente">›</button>
       </div>
+
       <div class="dias-semana">
-        <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fry</span><span>Sat</span><span>Sun</span>
       </div>
+
       <div class="dias" id="dias"></div>
     </section>
 
@@ -39,74 +44,108 @@
       <h2 id="panel-fecha">Elige un día</h2>
       <div class="panel-icono" id="panel-icono">📅</div>
       <div class="panel-texto" id="panel-texto">
-        Toca un día del calendario para ver cómo estuvo (o cómo estará) tu planta.
+        Toca un día del calendario para ver cómo estuvo la planta.
       </div>
     </section>
   </main>
 
   <script>
-    const LATITUD = 43.26, LONGITUD = -2.93; 
-    const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio",
-                   "Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-
+    // "const" para los valores fijos
+    const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-    let mesVisible = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+    // "let" para los que sean variables
+    let mesSeleccionado = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     let diaSeleccionado = null;
 
-    function aTexto(fecha) {            // Date -> "2026-11-12"
+    // Convierten una fecha al formato AÑO-MES-DÍA
+    function aTexto(fecha) {
+      // El padStart añade un 0 al inicio: de 3 se pasa a 03
       const m = String(fecha.getMonth() + 1).padStart(2, "0");
       const d = String(fecha.getDate()).padStart(2, "0");
       return `${fecha.getFullYear()}-${m}-${d}`;
     }
-    function bonita(fecha) {            // Date -> "jueves, 12 de noviembre"
+
+    // Saca la fecha en texto legible
+    function bonita(fecha) {          
       return fecha.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
     }
 
     function dibujarCalendario() {
+      // Pilla el div "dias" y lo limpia para dibujarlo de nuevo
       const contenedor = document.getElementById("dias");
       contenedor.innerHTML = "";
-      const año = mesVisible.getFullYear(), mes = mesVisible.getMonth();
+
+      // Selecciona el año y el mes y se lo introduce al h1 de antes
+      const año = mesSeleccionado.getFullYear();
+      const mes = mesSeleccionado.getMonth();
       document.getElementById("nombre-mes").textContent = `${MESES[mes]} ${año}`;
 
-      // Huecos antes del día 1 (la semana empieza en lunes)
-      const huecos = (new Date(año, mes, 1).getDay() + 6) % 7;
-      for (let i = 0; i < huecos; i++) contenedor.appendChild(document.createElement("span"));
+      // Gracias al getDay se sabe en qué día de la semana cae el día 1, p. ej.: domingo = 0, martes = 2...
+      const diaSemanaDelUno = new Date(año, mes, 1).getDay();
+      // Ajustar para que sea lunes = 0, martes = 1...
+      const huecos = (diaSemanaDelUno + 6) % 7;
 
+      // Por cada día (lunes, martes...) que haya antes del día 1 del mes, mete un span vacio
+      for (let i = 0; i < huecos; i++) {
+        contenedor.appendChild(document.createElement("span"));
+      }
+
+      // Al pedirle el día 0 del mes siguiente al actual, javascript lo corrige automaticamente con el día anterior a ese, o sea, la cantida de días que tiene el mes
       const diasDelMes = new Date(año, mes + 1, 0).getDate();
+      const textoHoy = aTexto(hoy);
+      
+      // Guardar en textoSeleccionado el día que haya sido seleccionado
+      let textoSeleccionado;
+      if (diaSeleccionado) {
+        textoSeleccionado = aTexto(diaSeleccionado);
+      } else {
+        textoSeleccionado = null;
+      }
+
+      // Va día por día poniendo los botones de cada uno de ellos
       for (let d = 1; d <= diasDelMes; d++) {
         const fecha = new Date(año, mes, d);
+        const textoFecha = aTexto(fecha);
         const boton = document.createElement("button");
+
         boton.className = "dia";
         boton.textContent = d;
-        if (fecha.getTime() === hoy.getTime()) boton.classList.add("hoy");
-        if (fecha < hoy) boton.classList.add("pasado");
-        if (diaSeleccionado && fecha.getTime() === diaSeleccionado.getTime()) boton.classList.add("seleccionado");
+
+        if (textoFecha === textoHoy) boton.classList.add("hoy");
+        if (textoFecha < textoHoy) boton.classList.add("pasado");
+        if (textoFecha === textoSeleccionado) boton.classList.add("seleccionado");
+        
+        // Si se ha pulsado el botón. Lleva a la lectura de la BD
         boton.onclick = () => seleccionarDia(fecha);
         contenedor.appendChild(boton);
       }
     }
 
+    // Al darle al boton para ir al mes anterior
     document.getElementById("mes-anterior").onclick = () => {
-      mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() - 1, 1);
+      mesSeleccionado = new Date(mesSeleccionado.getFullYear(), mesSeleccionado.getMonth() - 1, 1);
       dibujarCalendario();
     };
+    
+    // Al darle al boton para ir al mes siguiente
     document.getElementById("mes-siguiente").onclick = () => {
-      mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 1);
+      mesSeleccionado = new Date(mesSeleccionado.getFullYear(), mesSeleccionado.getMonth() + 1, 1);
       dibujarCalendario();
     };
 
-    // ---------- Panel del día ----------
+    // Muestra un icono y un texto en la caja de la derecha (la de los datos)
     function mostrar(icono, html) {
       document.getElementById("panel-icono").textContent = icono;
       document.getElementById("panel-texto").innerHTML = html;
     }
 
-    // Los nombres de las plantas vienen de la base de datos: se escapan antes de pintarlos
     function esc(texto) {
       const p = document.createElement("p");
       p.textContent = texto;
       return p.innerHTML;
     }
+
     function num(valor, unidad) {
       return valor === null ? "—" : `${valor}${unidad}`;
     }
@@ -124,13 +163,17 @@
       </div>`;
     }
 
+    // En base al día que haya sido seleccionado, muestra los datos en la caja de la derecha
     async function seleccionarDia(fecha) {
+      // Configurar la caja del calendario
       diaSeleccionado = fecha;
       dibujarCalendario();
+
+      // Configurar la caja de la derecha
       document.getElementById("panel-fecha").textContent = bonita(fecha);
       mostrar("⏳", "Cargando...");
 
-      // 1) ¿Responde el servidor de la Raspberry?
+      // Conectarse a la BD a traves de app.py mediante un fetch
       let respuesta;
       try {
         respuesta = await fetch(`/api/dia/${aTexto(fecha)}`);
@@ -138,23 +181,27 @@
         mostrar("📡", "No puedo conectar con la planta.");
         return;
       }
-      const datos = await respuesta.json().catch(() => null);
 
-      // 2) El servidor responde, pero la base de datos falla
+      // Si el servidor responde, pero la base de datos falla
       if (!respuesta.ok) {
-        const icono = datos && datos.error === "conexion" ? "🔌" : "⚠️";
-        mostrar(icono, esc((datos && datos.mensaje) || "El servidor ha dado un error inesperado"));
+        mostrar("⚠️", "Hay un error en la base de datos.");
         return;
       }
 
-      // 3) Conexión correcta, pero ese día no hay lecturas
+      // Convierte los datos para que no sean un JSON
+      const datos = await respuesta.json().catch(() => null);
+
+      // Conexión correcta, pero ese día no hay datos
       if (!datos.hay_datos) {
         mostrar("📭", "No hay nada guardado de este día.");
         return;
       }
 
+      // Si todo va bien
       mostrar("📊", datos.plantas.map(pintarPlanta).join(""));
     }
+
+    dibujarCalendario();
   </script>
 </body>
 </html>
