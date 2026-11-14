@@ -5,8 +5,7 @@ import time
  
 from flask import Flask, jsonify, render_template
  
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from sensores.buzzer import melodia
+from sensores.buzzer import tocar
 from sensores.temperature import buscar_sensor, leer_temperatura
 from sensores.lightSensor import leer_luz
 from sensores.moisture import abrir_bus, leer_dos_humedades, media
@@ -114,7 +113,7 @@ def tocar_melodia():
     if not sonando.acquire(blocking=False):
         return jsonify(mensaje="Ya está sonando, espera un momento 🎶"), 409
     try:
-        melodia()
+        tocar("himno_alegria")
         return jsonify(mensaje="¡Melodía terminada! 🌼")
     except Exception as error:
         return jsonify(mensaje=f"Error con el buzzer: {error}"), 500

@@ -1,67 +1,72 @@
-"""Hola mundo del buzzer de Plantamigo (pin D22 = GPIO22).
-
-Uso:
-    python3 pruebas/hola_buzzer.py           # modo pitido (sirve para cualquier buzzer)
-    python3 pruebas/hola_buzzer.py melodia   # modo melodía (solo buzzer PASIVO)
-
-Si en modo pitido oyes tres pitidos claros -> tienes un buzzer ACTIVO (un solo tono).
-Si solo oyes "clics" -> es PASIVO: prueba el modo melodía.
+"""Buzzer de Plantamigo (pin D22 = GPIO22).
 """
 
+import os
 import sys
 from time import sleep
+from gpiozero import PWMOutputDevice
+from repertorio import REPERTORIO
 
 PIN = 22  # D22 en el Grove Base Hat = GPIO22
+VOLUMEN = 0.5
+
+CANCION_PREDETERMINADA = "himno_alegria"
 
 
-def pitido():
-    from gpiozero import Buzzer
+def nota_a_hz(nota):
+    """Convierte una nota (ej. "Mi4", "Sol#3", "Sib4") a Hz."""
+    # Una nota tiene dos partes: el nombre y el número de octava.
+    # Ejemplo: "Sol#3" -> nombre = "Sol#", octava = 3
+    # Avanzamos letra a letra hasta encontrar el número de la octava.
+    nombre = ""
+    numero = ""
 
-    buzzer = Buzzer(PIN)
-    print("Pitando 3 veces en GPIO22...")
-    for _ in range(3):
-        buzzer.on()
-        sleep(0.2)
-        buzzer.off()
-        sleep(0.2)
-    print("¡Hecho!")
-
-
-def melodia():
-    from gpiozero import TonalBuzzer
-    from gpiozero.tones import Tone
-
-    # Rango A4-A6: los piezos suenan más limpios en agudos
-    buzzer = TonalBuzzer(PIN, mid_tone=Tone("A5"), octaves=1)
-    # Himno de la Alegría (Beethoven), tema principal en Do mayor
-    n = 0.4  # duración de una negra en segundos (bájalo para ir más rápido)
-    notas = [
-        # Mi Mi Fa Sol | Sol Fa Mi Re | Do Do Re Mi | Mi. Re Re
-        ("E5", n), ("E5", n), ("F5", n), ("G5", n),
-        ("G5", n), ("F5", n), ("E5", n), ("D5", n),
-        ("C5", n), ("C5", n), ("D5", n), ("E5", n),
-        ("E5", n * 1.5), ("D5", n / 2), ("D5", n * 2),
-        # Mi Mi Fa Sol | Sol Fa Mi Re | Do Do Re Mi | Re. Do Do
-        ("E5", n), ("E5", n), ("F5", n), ("G5", n),
-        ("G5", n), ("F5", n), ("E5", n), ("D5", n),
-        ("C5", n), ("C5", n), ("D5", n), ("E5", n),
-        ("D5", n * 1.5), ("C5", n / 2), ("C5", n * 2),
-    ]
-    print("Tocando el Himno de la Alegría en GPIO22...")
-    for nota, duracion in notas:
-        buzzer.play(Tone(nota))
-        sleep(duracion - 0.05)
-        buzzer.stop()
-        sleep(0.05)  # pequeño silencio para que se distingan las notas repetidas
-    buzzer.close()
-    print("¡Hecho!")
-
-
-if __name__ == "__main__":
-    try:
-        if len(sys.argv) > 1 and sys.argv[1] == "melodia":
-            melodia()
+    for letra in nota:
+        if letra.isdigit():
+            numero += letra   # Guarda el número que encuentre
         else:
-            pitido()
-    except KeyboardInterrupt:
-        print("\nInterrumpido.")
+            nombre += letra   # Se queda con el resto (la nota y su # o b)
+
+    if numero != "":
+        octava = int(numero)
+    else:
+        octava = 4    
+    semitonos = {
+        "Do": 0, "Do#": 1, "Reb": 1,
+        "Re": 2, "Re#": 3, "Mib": 3,
+        "Mi": 4,
+        "Fa": 5, "Fa#": 6, "Solb": 6,
+        "Sol": 7, "Sol#": 8, "Lab": 8,
+        "La": 9, "La#": 10, "Sib": 10,
+        "Si": 11,
+    }
+    semitono = semitonos[nombre]
+
+    # El sistema MIDI numera las notas: cada octava son 12 semitonos y
+    # La4 es el número 69, que suena exactamente a 440 Hz.
+    numero_midi = (octava + 1) * 12 + semitono
+
+    # A partir del número MIDI, cada semitono hacia arriba multiplica la
+    # frecuencia por 2^(1/12). Esta fórmula da los Hz exactos de la nota.
+    return round(440 * (2 ** ((numero_midi - 69) / 12)))
+
+
+def tocar(nombre_cancion, volumen=VOLUMEN):
+    """Toca una canción del repertorio buscando por su nombre."""
+    cancion = REPERTORIO[nombre_cancion]
+    buzzer = PWMOutputDevice(PIN)
+    try:
+        segundos_por_negra = cancion["negra"]
+        for nota, duracion in cancion["notas"]:
+            hz = nota_a_hz(nota)
+            buzzer.frequency = hz
+            buzzer.value = volumen
+
+            hueco = 0.05
+            sleep(segundos_por_negra * duracion - hueco)
+
+           
+            buzzer.value = 0.0
+            sleep(hueco)
+    finally:
+        buzzer.close()
