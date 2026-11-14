@@ -23,7 +23,7 @@ CANAL_2 = 4  # puerto A4
 # Calibración (valores en bruto del ADC de 12 bits, 0-4095).
 # AJÚSTALOS: mide con el sensor al aire (seco) y metido en un vaso de agua (mojado).
 RAW_SECO = 0       # sensor al aire: lee 0
-RAW_MOJADO = 2100  # sensor en un vaso de agua: lee ~2115 (provisional, un solo sensor medido)
+RAW_MOJADO = 2400  # sensor en un vaso de agua: lee ~2300-2480 (medido en los dos sensores)
 
 INTERVALO = 1  # segundos entre lecturas
 
