@@ -38,7 +38,7 @@ class SMBusFalso:
         self.bus = bus
 
     def read_word_data(self, direccion, registro):
-        return random.randint(900, 1800)  # en bruto, 12 bits
+        return random.randint(600, 1900)  # en bruto, 12 bits
 
     def write_byte(self, direccion, valor):
         pass

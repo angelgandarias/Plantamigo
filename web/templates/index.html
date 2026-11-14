@@ -69,7 +69,7 @@
     function estadoLuz(l) {
       //TODO: Esto deberá cambiar cuando introduzcamos los perfiles de planta
       //TODO: Comprobar si es de noche y desactivar este menú (no tiene sentido)
-      if (l >= 40) return { icono: "🪴", mensaje: "Iluminación adecuada." };
+      if (l >= 40) return { icono: "🪴", mensaje: "La iluminación es adecuada, la planta está a gusto!" };
       if (l >= 12) return { icono: "❄️", mensaje: "Hay poca luz. Deberías mover la planta." };
       return { icono: "❄️", mensaje: "No hay luz, ¡Mueve la planta!" };
     }
@@ -107,6 +107,7 @@
       }
     }
     let avisoSecoMostrado = false
+    let prevHumVal = 100
     let temporizadorAviso
 
     // Aviso dentro de la página (no bloquea como alert); se cierra solo o con la ✕
@@ -122,6 +123,8 @@
 
     // Umbrales orientativos: ajústalos al calibrar los sensores
     function estadoHumedad(h) {
+      if (h-prevHumVal > 15) tocarMelodia()
+      prevHumVal = h
       if (h >= 70) {
         avisoSecoMostrado = false
         return { icono: "💦", mensaje: "La tierra está muy húmeda, no hace falta regar" };
