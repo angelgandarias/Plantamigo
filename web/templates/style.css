@@ -125,3 +125,11 @@ h1 {
     margin-top: .8rem; 
     min-height: 1.2em; 
 }
+.aviso {
+  position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
+  background: #fff3cd; color: #333; border: 1px solid #e0c36a; border-radius: 8px;
+  padding: .75rem 1rem; box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  display: flex; gap: .75rem; align-items: center; z-index: 10;
+}
+.aviso[hidden] { display: none; }
+.aviso button { background: none; border: none; cursor: pointer; font-size: 1rem; }

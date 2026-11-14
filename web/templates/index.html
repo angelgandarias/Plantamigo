@@ -35,7 +35,7 @@
     <div class="tarjeta">
       <h2>Luz</h2>
       <div class="icono" id="luz-icono">⏳</div>
-      <div class="valor" id="luz-valor">--°</div>
+      <div class="valor" id="luz-valor">--%</div>
       <div class="mensaje" id="luz-mensaje">Leyendo el sensor...</div>
       <div class="detalle" id="luz-detalle"></div>
     </div>
@@ -51,6 +51,11 @@
   <div class="acciones">
     <button id="boton-melodia" onclick="tocarMelodia()">🎵 Tocar melodía</button>
     <div id="estado-melodia"></div>
+  </div>
+
+  <div id="aviso" class="aviso" hidden>
+    <span id="aviso-texto"></span>
+    <button onclick="cerrarAviso()">✕</button>
   </div>
 
   <script>
@@ -101,11 +106,34 @@
         
       }
     }
+    let avisoSecoMostrado = false
+    let temporizadorAviso
+
+    // Aviso dentro de la página (no bloquea como alert); se cierra solo o con la ✕
+    function mostrarAviso(texto, ms) {
+      document.getElementById("aviso-texto").textContent = texto;
+      document.getElementById("aviso").hidden = false;
+      clearTimeout(temporizadorAviso);
+      temporizadorAviso = setTimeout(cerrarAviso, ms);
+    }
+    function cerrarAviso() {
+      document.getElementById("aviso").hidden = true;
+    }
 
     // Umbrales orientativos: ajústalos al calibrar los sensores
     function estadoHumedad(h) {
-      if (h >= 70) return { icono: "💦", mensaje: "La tierra está muy húmeda, no hace falta regar" };
-      if (h >= 35) return { icono: "🪴", mensaje: "La humedad es adecuada, la planta está a gusto!" };
+      if (h >= 70) {
+        avisoSecoMostrado = false
+        return { icono: "💦", mensaje: "La tierra está muy húmeda, no hace falta regar" };
+      }
+      if (h >= 35) {
+        avisoSecoMostrado = false
+        return { icono: "🪴", mensaje: "La humedad es adecuada, la planta está a gusto!" };
+      }
+      if(!avisoSecoMostrado){
+      mostrarAviso("La tierra está seca, ¡hay que regar a la planta!", 2000000)
+      avisoSecoMostrado = true
+      }
       return { icono: "🏜️", mensaje: "La tierra está seca, ¡hay que regar a la planta!" };
     }
 
