@@ -32,7 +32,13 @@
       <div class="mensaje" id="temp-mensaje">Leyendo el sensor...</div>
       <div class="detalle" id="temp-detalle"></div>
     </div>
-    <div class="tarjeta"><span class="vacia">nada</span></div>
+    <div class="tarjeta">
+      <h2>Luz</h2>
+      <div class="icono" id="luz-icono">⏳</div>
+      <div class="valor" id="luz-valor">--°</div>
+      <div class="mensaje" id="luz-mensaje">Leyendo el sensor...</div>
+      <div class="detalle" id="luz-detalle"></div>
+    </div>
     <div class="tarjeta"><span class="vacia">nada</span></div>
   </section>
 
@@ -50,9 +56,9 @@
     }
 
     function estadoLuz(l) {
-      if (t >= 60) return { icono: "🔥", mensaje: "Hace mucha." };
-      if (t >= 30) return { icono: "☀️", mensaje: "Hace algo." };
-      if (t >= 12) return { icono: "🪴", mensaje: "Hace poca." };
+      if (l >= 60) return { icono: "🔥", mensaje: "Hace mucha." };
+      if (l >= 30) return { icono: "☀️", mensaje: "Hace algo." };
+      if (l >= 12) return { icono: "🪴", mensaje: "Hace poca." };
       return { icono: "❄️", mensaje: "No hay" };
     }
 
@@ -85,6 +91,7 @@
           datos.antiguedad_s > 30 ? `Última lectura hace ${datos.antiguedad_s} s` : "";
       } catch (err) {
         document.getElementById("luz-mensaje").textContent = "Sin conexión con la planta";
+        
       }
     }
 

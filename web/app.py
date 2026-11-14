@@ -19,7 +19,7 @@ app = Flask(__name__)
 sonando = threading.Lock()
 BUS_I2C = abrir_bus()  # ADC del hat (humedad en A2 y A4), se abre una sola vez
 
-ultima = {"temperatura": None, "hora": None}
+ultima = {"temperatura": None, "hora": None, "luz": None}
  
 
 def lector_en_segundo_plano():
@@ -33,7 +33,7 @@ def lector_en_segundo_plano():
         if temperatura is not None:
             ultima["temperatura"] = round(temperatura, 1)
         if light is not None:
-            ultima["luz"] = light
+            ultima["luz"] = light[0]
         ultima["hora"] = time.time()
         time.sleep(INTERVALO)
  
