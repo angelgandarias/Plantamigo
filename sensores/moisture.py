@@ -22,8 +22,8 @@ CANAL_2 = 4  # puerto A4
 
 # Calibración (valores en bruto del ADC de 12 bits, 0-4095).
 # AJÚSTALOS: mide con el sensor al aire (seco) y metido en un vaso de agua (mojado).
-RAW_SECO = 0
-RAW_MOJADO = 2500
+RAW_SECO = 0       # sensor al aire: lee 0
+RAW_MOJADO = 2100  # sensor en un vaso de agua: lee ~2115 (provisional, un solo sensor medido)
 
 INTERVALO = 1  # segundos entre lecturas
 
@@ -43,7 +43,11 @@ def leer_raw(bus, canal):
     if bus is None:
         return None
     try:
-        return bus.read_word_data(DIRECCION_HAT, REG_RAW + canal)
+        # Igual que la librería grove.adc: primero se selecciona el registro con
+        # write_byte; sin esto el hat devuelve siempre el mismo valor en todos los canales.
+        registro = REG_RAW + canal
+        bus.write_byte(DIRECCION_HAT, registro)
+        return bus.read_word_data(DIRECCION_HAT, registro)
     except OSError:
         return None
 
