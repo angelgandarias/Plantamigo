@@ -107,8 +107,7 @@ _modulo("gpiozero", PWMOutputDevice=PWMOutputDeviceFalso)
 # ---------- Temperatura: se parchea el módulo antes de que app.py lo importe ----------
 import sensores.temperature as temperatura  # noqa: E402
 
-temperatura.buscar_sensor = lambda: "/simulado/dht11"
-temperatura.leer_temperatura = lambda carpeta: random.uniform(18.0, 26.0)
+temperatura.leer_temperatura = lambda: random.uniform(18.0, 26.0)
 
 
 if __name__ == "__main__":

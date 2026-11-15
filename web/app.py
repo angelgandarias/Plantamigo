@@ -4,7 +4,14 @@ import threading
 import time
  
 from flask import Flask, jsonify, render_template
- 
+
+# Rutas para poder importar "sensores" (raíz del repo) y "repertorio" (que importa
+# buzzer.py desde sensores/) al arrancar con `python web/app.py` desde cualquier sitio.
+CARPETA_WEB = os.path.dirname(os.path.abspath(__file__))
+RAIZ_REPO = os.path.dirname(CARPETA_WEB)
+sys.path.insert(0, RAIZ_REPO)
+sys.path.insert(0, os.path.join(RAIZ_REPO, "sensores"))
+
 from sensores.buzzer import tocar
 from sensores.temperature import leer_temperatura
 from sensores.lightSensor import leer_luz
