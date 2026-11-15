@@ -73,6 +73,22 @@ h1 {
     opacity: .5; 
     cursor: wait; 
 }
+.acciones select {
+  font: inherit; font-size: 1.2rem; font-weight: 600;
+  padding: .8rem 1.2rem;
+  border: 3px solid #111; border-radius: 999px;
+  background: #fff; color: #111; cursor: pointer;
+  min-width: 180px;
+}
+
+.acciones select:hover,
+.acciones select:focus {
+  border-color: #555;
+}
+
+.acciones select:focus {
+  outline: none;
+}
 
 #estado-melodia { 
     margin-top: .8rem; 

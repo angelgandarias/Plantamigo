@@ -3,7 +3,7 @@ import sys
 import threading
 import time
  
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 
 # Rutas para poder importar "sensores" (raíz del repo) y "repertorio" (que importa
 # buzzer.py desde sensores/) al arrancar con `python web/app.py` desde cualquier sitio.
@@ -12,7 +12,8 @@ RAIZ_REPO = os.path.dirname(CARPETA_WEB)
 sys.path.insert(0, RAIZ_REPO)
 sys.path.insert(0, os.path.join(RAIZ_REPO, "sensores"))
 
-from sensores.buzzer import tocar
+from sensores.buzzer import tocar, CANCION_PREDETERMINADA
+from sensores.repertorio import REPERTORIO
 from sensores.temperature import leer_temperatura
 from sensores.lightSensor import leer_luz
 from sensores.moisture import abrir_bus, leer_dos_humedades, media
@@ -111,12 +112,19 @@ def api_humedad():
     return jsonify(humedad=ultima_humedad["humedad"], antiguedad_s=antiguedad)
 
 
+@app.route("/api/canciones", methods=["GET"])
+def listar_canciones():
+    return jsonify({"canciones": list(REPERTORIO.keys())})
+
+
 @app.route("/api/melodia", methods=["POST"])
 def tocar_melodia():
     if not sonando.acquire(blocking=False):
         return jsonify(mensaje="Ya está sonando, espera un momento 🎶"), 409
     try:
-        tocar("himno_alegria")
+        data = request.get_json() or {}
+        cancion = data.get("cancion") or CANCION_PREDETERMINADA
+        tocar(cancion)
         return jsonify(mensaje="¡Melodía terminada! 🌼")
     except Exception as error:
         return jsonify(mensaje=f"Error con el buzzer: {error}"), 500

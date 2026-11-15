@@ -50,6 +50,7 @@
   </section>
 
   <div class="acciones">
+    <select id="cancion" title="Elige la canción"></select>
     <button id="boton-melodia" onclick="tocarMelodia()">🎵 Tocar melodía</button>
     <div id="estado-melodia"></div>
   </div>
@@ -161,13 +162,41 @@
       }
     }
 
+    // "himno_alegria" -> "Himno Alegria" para mostrarlo bonito
+    function nombreBonito(clave) {
+      const texto = clave.replaceAll("_", " ");
+      return texto[0].toUpperCase() + texto.slice(1);
+    }
+
+    // Rellena el selector con las canciones del repertorio
+    async function cargarCanciones() {
+      try {
+        const r = await fetch("/api/canciones");
+        const datos = await r.json();
+        const select = document.getElementById("cancion");
+        datos.canciones.forEach(clave => {
+          const opcion = document.createElement("option");
+          opcion.value = clave;
+          opcion.textContent = nombreBonito(clave);
+          select.appendChild(opcion);
+        });
+      } catch (err) {
+        console.error("No se pudo cargar el repertorio");
+      }
+    }
+
     async function tocarMelodia() {
       const boton = document.getElementById("boton-melodia");
       const estado = document.getElementById("estado-melodia");
       boton.disabled = true;
       estado.textContent = "Sonando...";
       try {
-        const r = await fetch("/api/melodia", { method: "POST" });
+        const cancion = document.getElementById("cancion").value;
+        const r = await fetch("/api/melodia", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cancion })
+        });
         estado.textContent = (await r.json()).mensaje;
       } catch (err) {
         estado.textContent = "No se pudo conectar con la planta";
@@ -175,6 +204,7 @@
       boton.disabled = false;
     }
 
+    cargarCanciones();
     actualizarTemperatura();
     actualizarLuz();
     actualizarHumedad();

@@ -12,7 +12,15 @@ VOLUMEN = 0.5
 
 CANCION_PREDETERMINADA = "himno_alegria"
 
-
+semitonos = {
+    "Do": 0, "Do#": 1, "Reb": 1,
+    "Re": 2, "Re#": 3, "Mib": 3,
+    "Mi": 4,
+    "Fa": 5, "Fa#": 6, "Solb": 6,
+    "Sol": 7, "Sol#": 8, "Lab": 8,
+    "La": 9, "La#": 10, "Sib": 10,
+    "Si": 11,
+}
 def nota_a_hz(nota):
     """Convierte una nota (ej. "Mi4", "Sol#3", "Sib4") a Hz."""
     # Una nota tiene dos partes: el nombre y el número de octava.
@@ -20,6 +28,8 @@ def nota_a_hz(nota):
     # Avanzamos letra a letra hasta encontrar el número de la octava.
     nombre = ""
     numero = ""
+    if nota == "REST":
+        return 0
 
     for letra in nota:
         if letra.isdigit():
@@ -31,15 +41,7 @@ def nota_a_hz(nota):
         octava = int(numero)
     else:
         octava = 4    
-    semitonos = {
-        "Do": 0, "Do#": 1, "Reb": 1,
-        "Re": 2, "Re#": 3, "Mib": 3,
-        "Mi": 4,
-        "Fa": 5, "Fa#": 6, "Solb": 6,
-        "Sol": 7, "Sol#": 8, "Lab": 8,
-        "La": 9, "La#": 10, "Sib": 10,
-        "Si": 11,
-    }
+        
     semitono = semitonos[nombre]
 
     # El sistema MIDI numera las notas: cada octava son 12 semitonos y
@@ -59,9 +61,10 @@ def tocar(nombre_cancion, volumen=VOLUMEN):
         segundos_por_negra = cancion["negra"]
         for nota, duracion in cancion["notas"]:
             hz = nota_a_hz(nota)
-            buzzer.frequency = hz
-            buzzer.value = volumen
-
+            if hz > 0:
+                buzzer.frequency = hz
+                buzzer.value = volumen
+                
             hueco = 0.05
             sleep(segundos_por_negra * duracion - hueco)
 
