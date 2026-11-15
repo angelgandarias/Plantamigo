@@ -111,6 +111,45 @@ def ultimas_lecturas(id_planta, limite=100):
         ).fetchall()
 
 
+def media_y_limpieza(id_planta, n=7):
+    """Calcula la media de las n últimas lecturas de una planta y borra las anteriores.
+
+    Devuelve un dict con las medias (None si ese sensor no tiene datos), o None si
+    la planta no tiene lecturas. Los NULL de un sensor no cuentan en su media.
+    """
+    with conectar() as conexion:
+        resumen = conexion.execute(
+            """WITH ultimas AS (
+                   SELECT * FROM datos_planta
+                   WHERE id_planta = %(id)s
+                   ORDER BY fecha DESC
+                   LIMIT %(n)s
+               )
+               SELECT count(*)                           AS lecturas,
+                      min(fecha)                         AS desde,
+                      max(fecha)                         AS hasta,
+                      round(avg(temperatura), 1)         AS temperatura,
+                      round(avg(humedad), 1)             AS humedad,
+                      round(avg(luz)::numeric, 1)        AS luz,
+                      round(avg(calidad_aire)::numeric, 1) AS calidad_aire
+               FROM ultimas""",
+            {"id": id_planta, "n": n},
+        ).fetchone()
+        if resumen["lecturas"] == 0:
+            return None
+
+        #Solo se borra lo anterior a las n lecturas usadas en la media
+        resumen["borradas"] = conexion.execute(
+            "DELETE FROM datos_planta WHERE id_planta = %s AND fecha < %s",
+            (id_planta, resumen["desde"]),
+        ).rowcount
+
+    for campo in ("temperatura", "humedad", "luz", "calidad_aire"):
+        if resumen[campo] is not None:
+            resumen[campo] = float(resumen[campo])
+    return resumen
+
+
 #---------- Canciones ----------
 
 def canciones_de_usuario(id_usuario):

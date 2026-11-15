@@ -60,6 +60,27 @@ def test_lecturas_de_planta(bd):
     assert [p["nombre_planta"] for p in bd.plantas_de_usuario(id_usuario)] == ["Sunny"]
 
 
+def test_media_y_limpieza(bd):
+    id_planta = bd.crear_planta(bd.crear_usuario("ana", "a@e.com", "x"), "Girasol", "Sunny")
+    assert bd.media_y_limpieza(id_planta) is None  #sin lecturas
+
+    #10 lecturas, una por minuto, con humedad 10, 20, ..., 100
+    with bd.conectar() as conexion:
+        for i in range(1, 11):
+            conexion.execute(
+                """INSERT INTO datos_planta (id_planta, fecha, humedad)
+                   VALUES (%s, now() - make_interval(mins => %s), %s)""",
+                (id_planta, 10 - i, i * 10),
+            )
+
+    resumen = bd.media_y_limpieza(id_planta)
+    assert resumen["lecturas"] == 7
+    assert resumen["humedad"] == 70.0  #media de 40..100
+    assert resumen["temperatura"] is None  #ese sensor no tiene datos
+    assert resumen["borradas"] == 3
+    assert len(bd.ultimas_lecturas(id_planta)) == 7
+
+
 def test_humedad_fuera_de_rango(bd):
     id_planta = bd.crear_planta(bd.crear_usuario("ana", "a@e.com", "x"), "Cactus", "Pinchos")
     with pytest.raises(psycopg.errors.CheckViolation):

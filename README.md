@@ -8,6 +8,7 @@
 ## Base de datos (PostgreSQL)
 
 El esquema está en `web/basedatos/schema.sql` y el acceso desde Python en `web/basedatos/`.
+Guía completa de uso: [web/basedatos/README.md](web/basedatos/README.md).
 
 Tablas: `usuarios`, `plantas`, `canciones`, `usuarios_canciones` (canciones desbloqueadas por cada usuario) y `datos_planta` (lecturas de los sensores).
 
