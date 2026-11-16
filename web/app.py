@@ -17,7 +17,7 @@ from sensores.repertorio import REPERTORIO
 from sensores.temperature import leer_temperatura
 from sensores.lightSensor import leer_luz
 from sensores.moisture import abrir_bus, leer_dos_humedades, media
-from basedatos import guardar_lectura
+from basedatos.acumulador import Acumulador, guardar_media_diaria
 from basedatos.consultas import datos_del_dia, ErrorConexionBD, ErrorConsultaBD
 from datetime import datetime
  
@@ -31,8 +31,20 @@ ultima = {"temperatura": None, "hora": None, "luz": None}
 
 # --- Humedad del suelo (media de los 2 sensores en A2 y A4) ---
 ultima_humedad = {"humedad": None, "hora": None}
-INTERVALO_GUARDADO_HUMEDAD = 300  # segundos entre guardados en la BD (5 min)
 ID_PLANTA = os.environ.get("ID_PLANTA")  # planta a la que se asignan las lecturas
+
+# Cada 300 segunds (5 minutos) hará una lectura
+INTERVALO_APUNTE = 300
+
+# Ruta donde estan las lecturas de hoy
+RUTA_FICHERO = os.path.join(CARPETA_WEB, "instance", "lecturas_hoy.jsonl")
+
+# Funcion a la que se llamará cuando se tenga que guardar en la base de datos las medias
+def guardar_dia(dia, medias):
+    guardar_media_diaria(int(ID_PLANTA), dia, medias)
+
+acumulador = Acumulador(RUTA_FICHERO, guardar_dia)
+
 
 def lector_en_segundo_plano():
     while True:
@@ -47,26 +59,36 @@ def lector_en_segundo_plano():
  
 
 def lector_humedad_en_segundo_plano():
-    """Lee los dos sensores, calcula la media y la guarda en memoria y (cada X min) en la BD.
+    """Lee los dos sensores, calcula la media y la guarda en memoria.
 
     Va en su propio hilo para no depender del sensor de temperatura.
     """
-    proximo_guardado = 0
     while True:
         # Lectura de los dos sensores y media (ignora el que falle; None si fallan los dos)
         humedad = media(leer_dos_humedades(BUS_I2C))
         if humedad is not None:
             ultima_humedad["humedad"] = round(humedad, 1)
             ultima_humedad["hora"] = time.time()
-
-            if ID_PLANTA and time.time() >= proximo_guardado:
-                try:
-                    guardar_lectura(int(ID_PLANTA), humedad=ultima_humedad["humedad"])
-                    proximo_guardado = time.time() + INTERVALO_GUARDADO_HUMEDAD
-                except Exception as error:  # BD caída: seguimos leyendo igualmente
-                    print(f"[BD] No se pudo guardar la humedad: {error}")
-                    proximo_guardado = time.time() + INTERVALO  # reintenta pronto
         time.sleep(INTERVALO)
+
+
+# El hilo que irá apuntando los datos cada 5 minutos
+def apuntar_lecturas_en_segundo_plano():
+
+    while True:
+        time.sleep(INTERVALO_APUNTE)
+        acumulador.anadir(
+            temperatura=ultima["temperatura"], humedad=ultima_humedad["humedad"], luz=ultima["luz"]
+        )
+
+# El hilo que mira si el dia ha llegado a su fin
+def cerrar_dia_en_segundo_plano():
+    while True:
+        try:
+            acumulador.cerrar_dias_pendientes()
+        except Exception as error: 
+            print(f"[BD] No se pudo guardar la media del día: {error}")
+        time.sleep(60)
 
 
 @app.route("/")
@@ -143,4 +165,7 @@ def api_dia(fecha):
 if __name__ == "__main__":
     threading.Thread(target=lector_en_segundo_plano, daemon=True).start()
     threading.Thread(target=lector_humedad_en_segundo_plano, daemon=True).start()
+    if ID_PLANTA:
+        threading.Thread(target=apuntar_lecturas_en_segundo_plano, daemon=True).start()
+        threading.Thread(target=cerrar_dia_en_segundo_plano, daemon=True).start()
     app.run(host="0.0.0.0", port=5000, threaded=True)
