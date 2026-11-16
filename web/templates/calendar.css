@@ -1,3 +1,7 @@
+.logo:hover {
+  cursor: pointer;
+}
+
 .titulo-pagina { 
     font-size: 1.6rem; 
     font-weight: 700; 

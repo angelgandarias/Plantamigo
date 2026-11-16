@@ -4,54 +4,57 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Plantamigo</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='icono.png') }}">
   <style>
     {% include 'style.css' %}
     {% include 'common.css' %}
-</style>
+  </style>
 </head>
 <body>
     <header>
-    <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
+      <a href="/">
+        <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
+      </a>
 
-  <nav class="menu">
-      <a href="/" class="activo">Planta</a>
-      <a href="#" onclick="return false">Chatea</a>
-      <a href="/calendar">Semana</a>
-      <a href="#" onclick="return false">Tienda</a>
-  </nav>
+      <nav class="menu">
+          <a href="/" class="activo">Plant</a>
+          <a href="#" onclick="return false">Chat</a>
+          <a href="/calendar">Calendar</a>
+          <a href="#" onclick="return false">Shop</a>
+      </nav>
 
-    <button class="usuario" title="Perfil">👤</button>
+      <button class="usuario" title="Perfil">👤</button>
     </header>
 
-  <h1>Estadísticas actuales</h1>
+  <h1>Current statistics</h1>
 
   <section class="tarjetas">
     <div class="tarjeta">
-      <h2>Temperatura</h2>
+      <h2>Temperature</h2>
       <div class="icono" id="temp-icono">⏳</div>
       <div class="valor" id="temp-valor">--°</div>
-      <div class="mensaje" id="temp-mensaje">Leyendo el sensor...</div>
+      <div class="mensaje" id="temp-mensaje">Reading the sensor...</div>
       <div class="detalle" id="temp-detalle"></div>
     </div>
     <div class="tarjeta">
-      <h2>Luz</h2>
+      <h2>Light</h2>
       <div class="icono" id="luz-icono">⏳</div>
       <div class="valor" id="luz-valor">--%</div>
-      <div class="mensaje" id="luz-mensaje">Leyendo el sensor...</div>
+      <div class="mensaje" id="luz-mensaje">Reading the sensor...</div>
       <div class="detalle" id="luz-detalle"></div>
     </div>
     <div class="tarjeta">
-      <h2>Humedad</h2>
+      <h2>Humidity</h2>
       <div class="icono" id="hum-icono">⏳</div>
       <div class="valor" id="hum-valor">--%</div>
-      <div class="mensaje" id="hum-mensaje">Leyendo los sensores...</div>
+      <div class="mensaje" id="hum-mensaje">Reading the sensor...</div>
       <div class="detalle" id="hum-detalle"></div>
     </div>
   </section>
 
   <div class="acciones">
     <select id="cancion" title="Elige la canción"></select>
-    <button id="boton-melodia" onclick="tocarMelodia()">🎵 Tocar melodía</button>
+    <button id="boton-melodia" onclick="tocarMelodia()">🎵 Play song</button>
     <div id="estado-melodia"></div>
   </div>
 
@@ -62,18 +65,18 @@
 
   <script>
     function estadoTemperatura(t) {
-      if (t >= 30) return { icono: "🔥", mensaje: "Hace mucho calor. Deberías regar a la planta" };
-      if (t >= 25) return { icono: "☀️", mensaje: "Hace calor, vigila que la planta no se seque" };
-      if (t >= 12) return { icono: "🪴", mensaje: "La temperatura es adecuada, la planta está a gusto!" };
-      return { icono: "❄️", mensaje: "Hace frio, pon a la planta en un sitio más cálido" };
+      if (t >= 30) return { icono: "🔥", mensaje: "It's very hot. You should water the plant." };
+      if (t >= 25) return { icono: "☀️", mensaje: "It's hot, keep an eye on the plant so it doesn't dry out." };
+      if (t >= 12) return { icono: "🪴", mensaje: "The temperature is just right, the plant is happy!" };
+      return { icono: "❄️", mensaje: "It's cold, put the plant in a warmer spot." };
     }
 
     function estadoLuz(l) {
       //TODO: Esto deberá cambiar cuando introduzcamos los perfiles de planta
       //TODO: Comprobar si es de noche y desactivar este menú (no tiene sentido)
-      if (l >= 40) return { icono: "🪴", mensaje: "La iluminación es adecuada, la planta está a gusto!" };
-      if (l >= 12) return { icono: "❄️", mensaje: "Hay poca luz. Deberías mover la planta." };
-      return { icono: "❄️", mensaje: "No hay luz, ¡Mueve la planta!" };
+      if (l >= 40) return { icono: "🪴", mensaje: "The lighting is just right, the plant is happy!" };
+      if (l >= 12) return { icono: "🌒", mensaje: "There's low light. You should move the plant." };
+      return { icono: "🌑", mensaje: "There's no light, move the plant!" };
     }
 
     async function actualizarTemperatura() {
@@ -88,7 +91,7 @@
         document.getElementById("temp-detalle").textContent =
           datos.antiguedad_s > 30 ? `Última lectura hace ${datos.antiguedad_s} s` : "";
       } catch (err) {
-        document.getElementById("temp-mensaje").textContent = "Sin conexión con la planta";
+        document.getElementById("temp-mensaje").textContent = "Can't connect to the plant";
       }
     }
 
@@ -104,7 +107,7 @@
         document.getElementById("luz-detalle").textContent =
           datos.antiguedad_s > 30 ? `Última lectura hace ${datos.antiguedad_s} s` : "";
       } catch (err) {
-        document.getElementById("luz-mensaje").textContent = "Sin conexión con la planta";
+        document.getElementById("luz-mensaje").textContent = "Can't connect to the plant";
         
       }
     }
@@ -129,17 +132,17 @@
       prevHumVal = h
       if (h >= 70) {
         avisoSecoMostrado = false
-        return { icono: "💦", mensaje: "La tierra está muy húmeda, no hace falta regar" };
+        return { icono: "💦", mensaje: "The soil is very damp; there’s no need to water it." };
       }
       if (h >= 35) {
         avisoSecoMostrado = false
-        return { icono: "🪴", mensaje: "La humedad es adecuada, la planta está a gusto!" };
+        return { icono: "🪴", mensaje: "The humidity is just right; the plant is happy!" };
       }
       if(!avisoSecoMostrado){
-      mostrarAviso("La tierra está seca, ¡hay que regar a la planta!", 2000000)
+      mostrarAviso("The soil is dry; the plant needs to be watered!", 2000000)
       avisoSecoMostrado = true
       }
-      return { icono: "🏜️", mensaje: "La tierra está seca, ¡hay que regar a la planta!" };
+      return { icono: "🏜️", mensaje: "The soil is dry; the plant needs to be watered!" };
     }
 
     async function actualizarHumedad() {
@@ -158,7 +161,7 @@
         document.getElementById("hum-detalle").textContent =
           datos.antiguedad_s > 30 ? `Última lectura hace ${datos.antiguedad_s} s` : "";
       } catch (err) {
-        document.getElementById("hum-mensaje").textContent = "Sin conexión con la planta";
+        document.getElementById("hum-mensaje").textContent = "Can't connect to the plant";
       }
     }
 
@@ -199,7 +202,7 @@
         });
         estado.textContent = (await r.json()).mensaje;
       } catch (err) {
-        estado.textContent = "No se pudo conectar con la planta";
+        estado.textContent = "Can't connect to the plant";
       }
       boton.disabled = false;
     }

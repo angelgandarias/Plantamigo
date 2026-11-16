@@ -55,3 +55,43 @@ header {
 html {
   scrollbar-gutter: stable;
 }
+
+:root {
+  --fondo: #eef5e9;        /* fondo de la página */
+  --bloque: #dcebd3;       /* tarjetas, calendario, panel, cabecera */
+  --claro: #f7fbf4;        /* botones y días */
+  --tinta: #24402e;        /* texto normal */
+  --verde: #2a7043;        /* títulos, bordes, activo */
+  --verde-suave: #c5dfb9;  /* hovers */
+  --gris: #4a6351;         /* texto secundario */
+}
+
+body { background: var(--fondo); color: var(--tinta); }
+header { background: var(--bloque); border-bottom-color: var(--verde); }
+
+h1, h2, h3, .valor { color: var(--verde); }
+
+.menu a { color: var(--verde); }
+.menu a:hover { border-bottom-color: var(--verde-suave); }
+.menu a.activo { border-bottom-color: var(--verde); }
+
+.tarjeta, .calendario, .panel {
+  background: var(--bloque);
+  border-color: var(--verde);
+}
+
+.usuario, .flecha, .acciones button, .acciones select {
+  background: var(--claro);
+  border-color: var(--verde);
+  color: var(--verde);
+}
+
+.flecha:hover, .usuario:hover, .acciones button:hover { background: var(--verde-suave); }
+.acciones select:hover, .acciones select:focus { border-color: var(--tinta); }
+
+.dias-semana span, .detalle, .dia.pasado { color: var(--gris); }
+
+.dia { background: var(--claro); color: var(--tinta); }
+.dia:hover { background: var(--verde-suave); border-color: transparent; }
+.dia.hoy { border-color: var(--verde); color: var(--verde); }
+.dia.seleccionado { background: var(--verde); color: #fff; border-color: var(--verde); }

@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Plantamigo · Calendario</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='icono.png') }}">
     <style>
       {% include 'calendar.css' %}
       {% include 'common.css' %}
@@ -13,13 +14,15 @@
 <body>
 
   <header>
-    <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
+    <a href="/">
+      <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
+    </a>
 
     <nav class="menu">
-      <a href="/">Planta</a>
-      <a href="#" onclick="return false">Chatea</a>
-      <a href="/" class="activo">Semana</a>
-      <a href="#" onclick="return false">Tienda</a>
+      <a href="/">Plant</a>
+      <a href="#" onclick="return false">Chat</a>
+      <a href="/" class="activo">Calendar</a>
+      <a href="#" onclick="return false">Shop</a>
     </nav>
 
     <button class="usuario" title="Perfil">👤</button>
@@ -34,24 +37,24 @@
       </div>
 
       <div class="dias-semana">
-        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fry</span><span>Sat</span><span>Sun</span>
+        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
       </div>
 
       <div class="dias" id="dias"></div>
     </section>
 
     <section class="panel" id="panel">
-      <h2 id="panel-fecha">Elige un día</h2>
+      <h2 id="panel-fecha">Pick a day</h2>
       <div class="panel-icono" id="panel-icono">📅</div>
       <div class="panel-texto" id="panel-texto">
-        Toca un día del calendario para ver cómo estuvo la planta.
+        Tap a day on the calendar to see how the plant was doing.
       </div>
     </section>
   </main>
 
   <script>
     // "const" para los valores fijos
-    const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    const MESES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
 
     // "let" para los que sean variables
@@ -68,7 +71,7 @@
 
     // Saca la fecha en texto legible
     function bonita(fecha) {          
-      return fecha.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+      return fecha.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" });
     }
 
     function dibujarCalendario() {
@@ -154,12 +157,12 @@
       return `<div class="planta-dato">
         <h3>${esc(p.nombre)} <small>${esc(p.tipo)}</small></h3>
         <ul>
-          <li>Temperatura: <b>${num(p.temperatura_media, "°")}</b> (${num(p.temperatura_min, "°")} – ${num(p.temperatura_max, "°")})</li>
-          <li>Humedad: <b>${num(p.humedad_media, " %")}</b></li>
-          <li>Luz: <b>${num(p.luz_media, " %")}</b></li>
-          <li>Aire: <b>${num(p.calidad_aire_media, " ppm")}</b></li>
+          <li>Temperature: <b>${num(p.temperatura_media, "°")}</b> (${num(p.temperatura_min, "°")} – ${num(p.temperatura_max, "°")})</li>
+          <li>Humidity: <b>${num(p.humedad_media, " %")}</b></li>
+          <li>Light: <b>${num(p.luz_media, " %")}</b></li>
+          <li>Air: <b>${num(p.calidad_aire_media, " ppm")}</b></li>
         </ul>
-        <small>${p.lecturas} lecturas</small>
+        <small>${p.lecturas} readings</small>
       </div>`;
     }
 
@@ -171,20 +174,20 @@
 
       // Configurar la caja de la derecha
       document.getElementById("panel-fecha").textContent = bonita(fecha);
-      mostrar("⏳", "Cargando...");
+      mostrar("⏳", "Loading...");
 
       // Conectarse a la BD a traves de app.py mediante un fetch
       let respuesta;
       try {
         respuesta = await fetch(`/api/dia/${aTexto(fecha)}`);
       } catch {
-        mostrar("📡", "No puedo conectar con la planta.");
+        mostrar("📡", "Can't connect to the plant.");
         return;
       }
 
       // Si el servidor responde, pero la base de datos falla
       if (!respuesta.ok) {
-        mostrar("⚠️", "Hay un error en la base de datos.");
+        mostrar("⚠️", "There's a database error.");
         return;
       }
 
@@ -193,7 +196,7 @@
 
       // Conexión correcta, pero ese día no hay datos
       if (!datos.hay_datos) {
-        mostrar("📭", "No hay nada guardado de este día.");
+        mostrar("📭", "Nothing saved for this day.");
         return;
       }
 
