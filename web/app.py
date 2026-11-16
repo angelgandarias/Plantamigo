@@ -46,15 +46,6 @@ def lector_en_segundo_plano():
         time.sleep(INTERVALO)
  
 
-# Funciones de estadisticas 
-def lectura_simultanea_datos_brutos()-> tuple[float, float]:
-    # Devuelve una tupla con la humedad (%) de los dos sensores (None si alguno falla)
-    return leer_dos_humedades(BUS_I2C)
-def obtener_media(tupla_datos:tuple[float, float])-> float:
-    # Media de las humedades ignorando los sensores que fallaron (None)
-    return media(tupla_datos)
-
-
 def lector_humedad_en_segundo_plano():
     """Lee los dos sensores, calcula la media y la guarda en memoria y (cada X min) en la BD.
 
@@ -62,7 +53,8 @@ def lector_humedad_en_segundo_plano():
     """
     proximo_guardado = 0
     while True:
-        humedad = obtener_media(lectura_simultanea_datos_brutos())
+        # Lectura de los dos sensores y media (ignora el que falle; None si fallan los dos)
+        humedad = media(leer_dos_humedades(BUS_I2C))
         if humedad is not None:
             ultima_humedad["humedad"] = round(humedad, 1)
             ultima_humedad["hora"] = time.time()
@@ -76,11 +68,6 @@ def lector_humedad_en_segundo_plano():
                     proximo_guardado = time.time() + INTERVALO  # reintenta pronto
         time.sleep(INTERVALO)
 
-def formatear_dato_y_enviar():
-    # TODO: Supongo que aqui deberia de formatear ese dato y enviarlo a la web 
-    # Con formatear se refiere a json o algun otro formato?
-    # para enviar supongo que debo hacer algun POST?
-    return 
 
 @app.route("/")
 def inicio():
