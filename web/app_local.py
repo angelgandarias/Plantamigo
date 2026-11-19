@@ -11,7 +11,9 @@ Sustituye el hardware por versiones simuladas ANTES de importar app.py
 - Buzzer (gpiozero): imprime las notas por consola en lugar de sonar (dura lo mismo que la canción).
 
 La base de datos sigue siendo real: define DATABASE_URL si quieres usar el calendario.
-OJO: si defines también ID_PLANTA, la humedad simulada se guardará en esa BD cada 5 min.
+OJO: si defines también ID_PLANTA, se activan el acumulador y el cierre de día como en la Pi:
+las lecturas simuladas se apuntan en web/instance/lecturas_hoy.jsonl cada 5 min y las medias
+del día (simuladas) se guardan en esa BD.
 """
 
 import os
@@ -117,4 +119,7 @@ if __name__ == "__main__":
 
     threading.Thread(target=app.lector_en_segundo_plano, daemon=True).start()
     threading.Thread(target=app.lector_humedad_en_segundo_plano, daemon=True).start()
+    if app.ID_PLANTA:  # igual que en app.py
+        threading.Thread(target=app.apuntar_lecturas_en_segundo_plano, daemon=True).start()
+        threading.Thread(target=app.cerrar_dia_en_segundo_plano, daemon=True).start()
     app.app.run(host="127.0.0.1", port=5000, threaded=True, debug=False)

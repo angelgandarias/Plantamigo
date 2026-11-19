@@ -19,6 +19,7 @@ from sensores.lightSensor import leer_luz
 from sensores.moisture import abrir_bus, leer_dos_humedades, media
 from basedatos.acumulador import Acumulador, guardar_media_diaria
 from basedatos.consultas import datos_del_dia, ErrorConexionBD, ErrorConsultaBD
+from ciclo_solar import es_de_dia
 from datetime import datetime
  
 INTERVALO = 5 
@@ -111,7 +112,7 @@ def api_temperatura():
 def api_luz():
     hora = ultima["hora"]
     antiguedad = None if hora is None else round(time.time() - hora)
-    return jsonify(luz=ultima["luz"], antiguedad_s=antiguedad)
+    return jsonify(luz=ultima["luz"], antiguedad_s=antiguedad, es_de_dia=es_de_dia())
  
  
 @app.route("/api/humedad")
