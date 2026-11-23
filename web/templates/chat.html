@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plantamigo · Chat</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='icono.png') }}">
+  <style>
+    {% include 'chat.css' %}
+    {% include 'common.css' %}
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="/">
+      <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
+    </a>
+
+    <nav class="menu">
+      <a href="/">Plant</a>
+      <a href="/chat" class="activo">Chat</a>
+      <a href="/calendar">Calendar</a>
+      <a href="#" onclick="return false">Shop</a>
+    </nav>
+
+    <button class="usuario" title="Perfil">👤</button>
+  </header>
+
+  <main class="chat">
+    <div class="mensajes" id="mensajes" aria-live="polite"></div>
+
+    <div class="sugerencias" id="sugerencias">
+      <button type="button">How are you feeling?</button>
+      <button type="button">Do you need water?</button>
+      <button type="button">Tell me a fun fact about plants!</button>
+    </div>
+
+    <form class="escribir" id="formulario">
+      <textarea id="texto" rows="1" maxlength="1000" placeholder="Write to your plant..." required></textarea>
+      <button type="submit" id="enviar">Send</button>
+    </form>
+  </main>
+
+  <script>
+    const SALUDO = "Hi! 🌱 I'm your plant. Ask me how I'm doing or anything about nature!";
+
+    // El historial solo vive en el navegador: al recargar la página empieza de cero
+    const historial = [{ rol: "planta", texto: SALUDO }];
+
+    const cajaMensajes = document.getElementById("mensajes");
+    const formulario = document.getElementById("formulario");
+    const campoTexto = document.getElementById("texto");
+    const botonEnviar = document.getElementById("enviar");
+    const sugerencias = document.getElementById("sugerencias");
+
+    function pintarMensaje(rol, texto, clase = "") {
+      const burbuja = document.createElement("div");
+      burbuja.className = `burbuja ${rol} ${clase}`.trim();
+      burbuja.textContent = texto;  // textContent: el texto nunca se interpreta como HTML
+      cajaMensajes.appendChild(burbuja);
+      cajaMensajes.scrollTop = cajaMensajes.scrollHeight;
+      return burbuja;
+    }
+
+    async function enviar(texto) {
+      texto = texto.trim();
+      if (!texto || botonEnviar.disabled) return;
+
+      historial.push({ rol: "usuario", texto });
+      pintarMensaje("yo", texto);  // "yo" y no "usuario": .usuario ya es el botón de perfil
+      campoTexto.value = "";
+      sugerencias.hidden = true;
+      botonEnviar.disabled = true;
+      const escribiendo = pintarMensaje("planta", "Thinking... 🌿", "escribiendo");
+
+      try {
+        const r = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mensajes: historial }),
+        });
+        const datos = await r.json();
+        escribiendo.remove();
+        if (r.ok) {
+          historial.push({ rol: "planta", texto: datos.respuesta });
+          pintarMensaje("planta", datos.respuesta);
+        } else {
+          historial.pop();  // el mensaje sin respuesta no se queda en el historial
+          pintarMensaje("planta", `😵 ${datos.mensaje}`, "error");
+        }
+      } catch (error) {
+        escribiendo.remove();
+        historial.pop();
+        pintarMensaje("planta", "😵 Could not connect to the server.", "error");
+      } finally {
+        botonEnviar.disabled = false;
+        campoTexto.focus();
+      }
+    }
+
+    formulario.addEventListener("submit", (e) => {
+      e.preventDefault();
+      enviar(campoTexto.value);
+    });
+
+    // Enter envía; Shift+Enter hace salto de línea
+    campoTexto.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        enviar(campoTexto.value);
+      }
+    });
+
+    sugerencias.querySelectorAll("button").forEach((boton) =>
+      boton.addEventListener("click", () => enviar(boton.textContent))
+    );
+
+    pintarMensaje("planta", SALUDO);
+    campoTexto.focus();
+  </script>
+</body>
+</html>

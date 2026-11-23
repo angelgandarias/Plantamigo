@@ -83,6 +83,14 @@ def crear_planta(id_usuario, tipo_planta, nombre_planta, descripcion_planta=None
     return fila["id_planta"]
 
 
+def obtener_planta(id_planta):
+    """Devuelve el perfil de una planta, o None si no existe."""
+    with conectar() as conexion:
+        return conexion.execute(
+            "SELECT * FROM plantas WHERE id_planta = %s", (id_planta,)
+        ).fetchone()
+
+
 def plantas_de_usuario(id_usuario):
     with conectar() as conexion:
         return conexion.execute(

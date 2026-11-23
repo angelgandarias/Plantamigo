@@ -1,3 +1,4 @@
 flask
 psycopg[binary]
 astral
+python-dotenv

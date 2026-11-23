@@ -23,6 +23,44 @@ Puesta en marcha (desde la raíz del repositorio):
 3. Para la aplicación, definir la conexión en la variable de entorno `DATABASE_URL`:
    `postgresql://plantamigo:plantamigo123@localhost:5432/plantamigodb`
 
+## Chat con la planta (LLM)
+
+La página **Chat** (`/chat`) permite hablar con la planta. En cada mensaje,
+`web/asistente.py` construye el *system prompt* con el perfil de la planta
+(tabla `plantas`, según `ID_PLANTA`) y las lecturas actuales de los sensores,
+y lo envía a un LLM.
+
+Funciona con cualquier proveedor compatible con la API de OpenAI
+(`/chat/completions`). Se configura con variables de entorno, sin tocar código:
+
+| Variable | Obligatoria | Qué es |
+|---|---|---|
+| `LLM_BASE_URL` | Sí | URL base de la API del proveedor. |
+| `LLM_MODEL` | Sí | Nombre del modelo (consúltalo en la web del proveedor, cambian a menudo). |
+| `LLM_API_KEY` | Según el proveedor | Clave de la API. No hace falta para Ollama. |
+
+| Proveedor | `LLM_BASE_URL` |
+|---|---|
+| Google Gemini (tiene capa gratuita) | `https://generativelanguage.googleapis.com/v1beta/openai/` |
+| Groq | `https://api.groq.com/openai/v1` |
+| OpenAI | `https://api.openai.com/v1` |
+| Ollama (local, gratis) | `http://localhost:11434/v1` |
+
+Ejemplo (PowerShell; en Linux, `export VAR=valor`):
+
+```powershell
+$env:LLM_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai/"
+$env:LLM_MODEL="<nombre-del-modelo>"
+$env:LLM_API_KEY="<tu-clave>"
+python web/app_local.py
+```
+
+- Sin `LLM_BASE_URL` o `LLM_MODEL`, la web funciona igual y el chat muestra un aviso.
+- Sin `ID_PLANTA` o sin base de datos, el chat usa un perfil genérico ("Plantamigo").
+- Las conversaciones no se guardan: el historial vive solo en el navegador y se pierde al recargar.
+  Los mensajes sí se envían al proveedor del LLM.
+- No subáis la clave al repositorio.
+
 ## Probar en local (sin Raspberry Pi)
 
 `python web/app_local.py` arranca la web con los sensores y el buzzer simulados

@@ -1,0 +1,99 @@
+.chat {
+  max-width: 760px;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  height: calc(100vh - 140px);
+}
+
+.mensajes {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  padding: 1rem;
+  border: 3px solid var(--verde);
+  border-radius: 16px;
+  background: var(--bloque);
+}
+
+.burbuja {
+  max-width: 80%;
+  padding: .7rem 1rem;
+  border-radius: 16px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.burbuja.planta {
+  align-self: flex-start;
+  background: var(--claro);
+  color: var(--tinta);
+  border: 2px solid var(--verde-suave);
+  border-bottom-left-radius: 4px;
+}
+
+.burbuja.yo {
+  align-self: flex-end;
+  background: var(--verde);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.burbuja.escribiendo { color: var(--gris); font-style: italic; }
+.burbuja.error { border-color: #c0392b; color: #c0392b; }
+
+.sugerencias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.sugerencias[hidden] { display: none; }
+
+.sugerencias button {
+  padding: .4rem .9rem;
+  border: 2px solid var(--verde);
+  border-radius: 999px;
+  background: var(--claro);
+  color: var(--verde);
+  font: inherit;
+  cursor: pointer;
+}
+
+.sugerencias button:hover { background: var(--verde-suave); }
+
+.escribir {
+  display: flex;
+  gap: .6rem;
+}
+
+.escribir textarea {
+  flex: 1;
+  resize: none;
+  padding: .7rem 1rem;
+  border: 3px solid var(--verde);
+  border-radius: 16px;
+  background: var(--claro);
+  color: var(--tinta);
+  font: inherit;
+}
+
+.escribir textarea:focus { outline: none; border-color: var(--tinta); }
+
+.escribir button {
+  padding: 0 1.4rem;
+  border: 3px solid var(--verde);
+  border-radius: 16px;
+  background: var(--verde);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.escribir button:disabled { opacity: .5; cursor: wait; }

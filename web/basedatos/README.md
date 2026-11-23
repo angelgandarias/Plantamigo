@@ -172,6 +172,7 @@ gestionar conexiones a mano. Las filas se devuelven como **diccionarios**
 | Función | Devuelve |
 |---|---|
 | `crear_planta(id_usuario, tipo_planta, nombre_planta, descripcion_planta=None)` | `id_planta` |
+| `obtener_planta(id_planta)` | dict de la planta o `None` (lo usa el chat para el perfil) |
 | `plantas_de_usuario(id_usuario)` | lista de dicts |
 
 ### Lecturas de sensores

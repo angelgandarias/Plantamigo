@@ -60,6 +60,14 @@ def test_lecturas_de_planta(bd):
     assert [p["nombre_planta"] for p in bd.plantas_de_usuario(id_usuario)] == ["Sunny"]
 
 
+def test_obtener_planta(bd):
+    id_planta = bd.crear_planta(bd.crear_usuario("ana", "a@e.com", "x"), "Girasol", "Sunny", "En el balcón")
+    planta = bd.obtener_planta(id_planta)
+    assert (planta["nombre_planta"], planta["tipo_planta"]) == ("Sunny", "Girasol")
+    assert planta["descripcion_planta"] == "En el balcón"
+    assert bd.obtener_planta(id_planta + 1) is None
+
+
 def test_media_y_limpieza(bd):
     id_planta = bd.crear_planta(bd.crear_usuario("ana", "a@e.com", "x"), "Girasol", "Sunny")
     assert bd.media_y_limpieza(id_planta) is None  #sin lecturas

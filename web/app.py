@@ -12,6 +12,11 @@ RAIZ_REPO = os.path.dirname(CARPETA_WEB)
 sys.path.insert(0, RAIZ_REPO)
 sys.path.insert(0, os.path.join(RAIZ_REPO, "sensores"))
 
+# Variables de entorno desde el fichero .env de la raíz (si existe). Va antes de leer
+# ID_PLANTA y compañía; las variables ya definidas en la terminal tienen prioridad.
+from dotenv import load_dotenv
+load_dotenv(os.path.join(RAIZ_REPO, ".env"))
+
 from sensores.buzzer import tocar, CANCION_PREDETERMINADA
 from sensores.repertorio import REPERTORIO
 from sensores.temperature import leer_temperatura
@@ -19,7 +24,9 @@ from sensores.lightSensor import leer_luz
 from sensores.moisture import abrir_bus, leer_dos_humedades, media
 from basedatos.acumulador import Acumulador, guardar_media_diaria
 from basedatos.consultas import datos_del_dia, ErrorConexionBD, ErrorConsultaBD
+from basedatos import obtener_planta
 from ciclo_solar import es_de_dia
+from asistente import responder, ErrorAsistente, HistorialNoValido
 from datetime import datetime
  
 INTERVALO = 5 
@@ -99,7 +106,11 @@ def inicio():
 @app.route("/calendar")
 def calendar():
     return render_template("calendar.html")
- 
+
+@app.route("/chat")
+def chat():
+    return render_template("chat.html")
+
  
 @app.route("/api/temperatura")
 def api_temperatura():
@@ -142,17 +153,17 @@ def tocar_melodia():
         sonando.release()
 
 
-# Consular a la BD por los datos de la planta segun la fecha
+#Consulta a la BD por los datos de la planta segun la fecha
 @app.route("/api/dia/<fecha>")
 def api_dia(fecha):
 
-    # Convertir la fecha en formato AÑO-MES-DÍA en una que Python pueda leer
+    #Convierte la fecha en formato AÑO-MES-DÍA en una que Python pueda leer
     try:
         dia = datetime.strptime(fecha, "%Y-%m-%d").date()
     except ValueError:
         return jsonify(error="fecha", mensaje="Fecha no válida"), 400
 
-    # Llama a datos_del_dia de consultas.py que consulta Postgres y devuelve el resultado como JSON al navegador
+    #Llama a datos_del_dia de consultas.py que consulta Postgres y devuelve el resultado como JSON al navegador
     try:
         return jsonify(datos_del_dia(dia))
     except ErrorConexionBD as error:
@@ -162,7 +173,38 @@ def api_dia(fecha):
         print(f"[BD] Error en la consulta: {error}")
         return jsonify(error="consulta", mensaje="La base de datos ha dado un error al consultar"), 500
 
- 
+
+#Sin ID_PLANTA o sin BD, el chat funciona con un perfil genérico
+def perfil_planta():
+    if not ID_PLANTA:
+        return None
+    try:
+        return obtener_planta(int(ID_PLANTA))
+    except Exception as error:
+        print(f"[BD] No se pudo leer el perfil de la planta: {error}")
+        return None
+
+
+@app.route("/api/chat", methods=["POST"])
+def api_chat():
+    data = request.get_json(silent=True) or {}
+    hora = ultima["hora"]
+    sensores = {
+        "temperatura": ultima["temperatura"],
+        "humedad": ultima_humedad["humedad"],
+        "luz": ultima["luz"],
+        "es_de_dia": es_de_dia(),
+        "antiguedad_s": None if hora is None else round(time.time() - hora),
+    }
+    try:
+        respuesta = responder(data.get("mensajes"), perfil_planta(), sensores)
+    except HistorialNoValido as error:
+        return jsonify(error="mensajes", mensaje=str(error)), 400
+    except ErrorAsistente as error:
+        return jsonify(error="llm", mensaje=str(error)), 503
+    return jsonify(respuesta=respuesta)
+
+
 if __name__ == "__main__":
     threading.Thread(target=lector_en_segundo_plano, daemon=True).start()
     threading.Thread(target=lector_humedad_en_segundo_plano, daemon=True).start()
