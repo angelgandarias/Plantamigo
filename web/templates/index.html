@@ -54,6 +54,12 @@
 
   <div class="acciones">
     <select id="cancion" title="Elige la canción"></select>
+    <div class="volumen">
+      <label for="volumen">
+        Volumen: <span id="volumen-valor">50%</span>
+      </label>
+      <input type="range" id="volumen" min="0" max="100" value="50">
+    </div>
     <button id="boton-melodia" onclick="tocarMelodia()">🎵 Play song</button>
     <div id="estado-melodia"></div>
   </div>
@@ -198,6 +204,13 @@
       }
     }
 
+    const inputVolumen = document.getElementById("volumen");
+    const valorVolumen = document.getElementById("volumen-valor");
+
+    inputVolumen.addEventListener("input", () => {
+      valorVolumen.textContent = `${inputVolumen.value}%`;
+    });
+
     async function tocarMelodia() {
       const boton = document.getElementById("boton-melodia");
       const estado = document.getElementById("estado-melodia");
@@ -205,10 +218,11 @@
       estado.textContent = "Sonando...";
       try {
         const cancion = document.getElementById("cancion").value;
+        const volumen = Number(inputVolumen.value) / 1000;
         const r = await fetch("/api/melodia", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cancion })
+          body: JSON.stringify({ cancion, volumen })
         });
         estado.textContent = (await r.json()).mensaje;
       } catch (err) {

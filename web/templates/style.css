@@ -95,6 +95,21 @@ h1 {
   outline: none;
 }
 
+.acciones .volumen {
+  display: inline-flex;
+  align-items: center;
+  gap: .7rem;
+  margin: 0 .5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.acciones input[type="range"] {
+  width: 150px;
+  accent-color: #111;
+  cursor: pointer;
+}
+
 #estado-melodia { 
     margin-top: .8rem; 
     min-height: 1.2em; 

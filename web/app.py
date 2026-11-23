@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(RAIZ_REPO, "sensores"))
 from dotenv import load_dotenv
 load_dotenv(os.path.join(RAIZ_REPO, ".env"))
 
-from sensores.buzzer import tocar, CANCION_PREDETERMINADA
+from sensores.buzzer import tocar, CANCION_PREDETERMINADA, VOLUMEN
 from sensores.repertorio import REPERTORIO
 from sensores.temperature import leer_temperatura
 from sensores.lightSensor import leer_luz
@@ -143,9 +143,11 @@ def tocar_melodia():
     if not sonando.acquire(blocking=False):
         return jsonify(mensaje="Ya está sonando, espera un momento 🎶"), 409
     try:
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
         cancion = data.get("cancion") or CANCION_PREDETERMINADA
-        tocar(cancion)
+        volumen = float(data.get("volumen", VOLUMEN))
+        volumen = max(0.0, min(1.0, volumen))
+        tocar(cancion, volumen)
         return jsonify(mensaje="¡Melodía terminada! 🌼")
     except Exception as error:
         return jsonify(mensaje=f"Error con el buzzer: {error}"), 500
