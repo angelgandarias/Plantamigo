@@ -28,6 +28,7 @@ from basedatos import obtener_planta
 from ciclo_solar import es_de_dia
 from asistente import responder, ErrorAsistente, HistorialNoValido
 from datetime import datetime
+from sensores.LED import aviso_sed
  
 INTERVALO = 5 
  
@@ -64,21 +65,32 @@ def lector_en_segundo_plano():
             ultima["luz"] = round(light[0],1)
         ultima["hora"] = time.time()
         time.sleep(INTERVALO)
- 
+
+UMBRAL_SECO = 35
+
+def avisar_sed():
+    with sonando:
+        aviso_sed()
 
 def lector_humedad_en_segundo_plano():
     """Lee los dos sensores, calcula la media y la guarda en memoria.
 
     Va en su propio hilo para no depender del sensor de temperatura.
     """
+    sed_avisada = False
     while True:
         # Lectura de los dos sensores y media (ignora el que falle; None si fallan los dos)
         humedad = media(leer_dos_humedades(BUS_I2C))
         if humedad is not None:
             ultima_humedad["humedad"] = round(humedad, 1)
             ultima_humedad["hora"] = time.time()
-        time.sleep(INTERVALO)
 
+        if humedad < UMBRAL_SECO and not sed_avisada:
+            threading.Thread(target=avisar_sed, daemon=True).start()
+            sed_avisada = True
+        elif humedad >= UMBRAL_SECO:
+            sed_avisada = False
+        time.sleep(INTERVALO)
 
 # El hilo que irá apuntando los datos cada 5 minutos
 def apuntar_lecturas_en_segundo_plano():

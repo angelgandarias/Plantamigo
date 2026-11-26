@@ -1,9 +1,13 @@
 from grove.display.jhd1802 import JHD1802
 from time import sleep
+from buzzer import pitido
 
 # Texto de cada una de las dos filas
 FILA1 = "Hola mundo"
 FILA2 = "Plantamigo"
+
+FILA1HUMEDAD = "Hola, tengo sed"
+FILA2HUMEDAD = "Dame agua!"
 
 # Crea el objeto de la pantalla 
 lcd = JHD1802()
@@ -23,10 +27,20 @@ def mostrar_texto(fila1, fila2=""):
     lcd.setCursor(1, 0)
     lcd.write(fila2[:16])
 
+# Muestra el mensaje de sed, pita y lo quita pasados unos segundos
+def aviso_sed(segundos=5):
+    mostrar_texto(FILA1HUMEDAD, FILA2HUMEDAD)
+    pitido()
+    sleep(10)
+    lcd.clear()
+
 # Función principal
 if __name__ == "__main__":
     try:
         mostrar_texto(FILA1, FILA2)
+
+
+
 
         # Mantiene el programa vivo
         while True:

@@ -73,3 +73,16 @@ def tocar(nombre_cancion, volumen=VOLUMEN):
             sleep(hueco)
     finally:
         buzzer.close()
+
+def pitido(veces=2, hz=2000, duracion=0.12, volumen=VOLUMEN):
+    
+    buzzer = PWMOutputDevice(PIN)
+    try:
+        buzzer.frequency = hz
+        for _ in range(veces):
+            buzzer.value = volumen
+            sleep(duracion)
+            buzzer.value = 0.0
+            sleep(duracion)
+    finally:
+        buzzer.close()
