@@ -65,10 +65,10 @@ def tocar(nombre_cancion, volumen=VOLUMEN):
                 buzzer.frequency = hz
                 buzzer.value = volumen
                 
-            hueco = 0.05
-            sleep(segundos_por_negra * duracion - hueco)
+            duracion_segundos = segundos_por_negra * duracion
+            hueco = min(0.05, duracion_segundos * 0.1)
+            sleep(max(0, duracion_segundos - hueco))
 
-           
             buzzer.value = 0.0
             sleep(hueco)
     finally:
