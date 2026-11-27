@@ -46,6 +46,25 @@ def test_email_unico_sin_distinguir_mayusculas(bd):
         bd.crear_usuario("otra", "ANA@example.com", "x")
 
 
+def test_usuario_google(bd):
+    #Primera vez: se crea con el nombre sacado del email y sin contraseña
+    nuevo = bd.usuario_google("sub-1", "luis@gmail.com")
+    assert nuevo["nombre_usuario"] == "luis"
+    assert "contrasena_hash" not in nuevo
+    assert bd.comprobar_credenciales("luis", "") is None  #no puede entrar con contraseña
+
+    #Segunda vez: es el mismo usuario, no se duplica
+    assert bd.usuario_google("sub-1", "luis@gmail.com")["id_usuario"] == nuevo["id_usuario"]
+
+    #Cuenta existente con ese email: se vincula a Google
+    id_ana = bd.crear_usuario("ana", "Ana@example.com", "secreta")
+    assert bd.usuario_google("sub-2", "ana@example.com")["id_usuario"] == id_ana
+    assert bd.comprobar_credenciales("ana", "secreta") is not None  #su contraseña sigue valiendo
+
+    #Nombre de usuario ya cogido: se le añade un número
+    assert bd.usuario_google("sub-3", "luis@otro.com")["nombre_usuario"] == "luis2"
+
+
 def test_lecturas_de_planta(bd):
     id_usuario = bd.crear_usuario("ana", "ana@example.com", "x")
     id_planta = bd.crear_planta(id_usuario, "Girasol", "Sunny")

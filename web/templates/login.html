@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plantamigo · Log in</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='icono.png') }}">
+  <style>
+    {% include 'common.css' %}
+
+    .login {
+      max-width: 420px;
+      margin: 4rem auto;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      background: var(--bloque);
+      border: 3px solid var(--verde);
+      border-radius: 16px;
+    }
+    .login p { color: var(--gris); }
+    .boton-google { display: flex; justify-content: center; margin: 1.5rem 0 1rem; }
+    .estado-login { min-height: 1.5rem; }
+    .usuario-salir {
+      padding: .6rem 1.4rem; font-size: 1rem; cursor: pointer;
+      border: 2px solid var(--verde); border-radius: 999px;
+      background: var(--claro); color: var(--verde);
+    }
+    .usuario-salir:hover { background: var(--verde-suave); }
+  </style>
+  {% if google_client_id %}
+  <!-- Google Identity Services: dibuja el botón y devuelve un ID token (JWT) -->
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  {% endif %}
+</head>
+<body>
+  <header>
+    <a href="/">
+      <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Plantamigo">
+    </a>
+
+    <nav class="menu">
+      <a href="/">Plant</a>
+      <a href="/chat">Chat</a>
+      <a href="/calendar">Calendar</a>
+      <a href="#" onclick="return false">Shop</a>
+    </nav>
+
+    <button class="usuario" title="Profile" onclick="location.href='/login'">👤</button>
+  </header>
+
+  <section class="login">
+    <h1>Log in</h1>
+    <p>Sign in with your Google account to save your plants and unlock songs.</p>
+
+    <div id="sesion" hidden>
+      <p>Logged in as <b id="sesion-nombre"></b></p>
+      <button class="usuario-salir" onclick="cerrarSesion()">Log out</button>
+    </div>
+
+    <div id="entrar">
+    {% if google_client_id %}
+    <div id="g_id_onload"
+         data-client_id="{{ google_client_id }}"
+         data-callback="loginConGoogle"
+         data-auto_prompt="false">
+    </div>
+    <div class="boton-google">
+      <div class="g_id_signin"
+           data-type="standard"
+           data-shape="pill"
+           data-theme="outline"
+           data-text="signin_with"
+           data-size="large"
+           data-locale="en">
+      </div>
+    </div>
+    {% else %}
+    <p><b>Google login is not configured:</b> the GOOGLE_CLIENT_ID environment variable is missing.</p>
+    {% endif %}
+    </div>
+
+    <div class="estado-login" id="estado-login"></div>
+  </section>
+
+  <script>
+    // Google llama a esta función cuando el usuario elige su cuenta.
+    // respuesta.credential es el ID token (JWT) que el backend debe validar.
+    async function loginConGoogle(respuesta) {
+      const estado = document.getElementById("estado-login");
+      estado.textContent = "Checking your account...";
+      try {
+        const r = await fetch("/api/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credential: respuesta.credential }),
+        });
+        const datos = await r.json();
+        if (!r.ok) {
+          estado.textContent = datos.mensaje || "Could not log in.";
+          return;
+        }
+        estado.textContent = `Welcome, ${datos.nombre_usuario}!`;
+        setTimeout(() => { location.href = "/"; }, 800);
+      } catch (err) {
+        estado.textContent = "Could not connect with the server.";
+      }
+    }
+
+    // Si ya hay sesión abierta, muestra el usuario y el botón de salir en vez del de Google
+    function mostrarSesion(usuario) {
+      document.getElementById("sesion").hidden = !usuario;
+      document.getElementById("entrar").hidden = !!usuario;
+      if (usuario) document.getElementById("sesion-nombre").textContent = usuario.nombre_usuario;
+    }
+
+    async function comprobarSesion() {
+      try {
+        const r = await fetch("/api/auth/me");
+        mostrarSesion((await r.json()).usuario);
+      } catch (err) {
+        // sin conexión: se queda el botón de Google
+      }
+    }
+
+    async function cerrarSesion() {
+      await fetch("/api/auth/logout", { method: "POST" });
+      mostrarSesion(null);
+      document.getElementById("estado-login").textContent = "You have logged out.";
+    }
+
+    comprobarSesion();
+  </script>
+</body>
+</html>

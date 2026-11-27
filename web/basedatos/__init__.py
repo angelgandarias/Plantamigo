@@ -55,8 +55,50 @@ def comprobar_credenciales(nombre_usuario, contrasena):
         usuario = conexion.execute(
             "SELECT * FROM usuarios WHERE nombre_usuario = %s", (nombre_usuario,)
         ).fetchone()
-    if usuario is None or not check_password_hash(usuario["contrasena_hash"], contrasena):
+    #Los usuarios de Google no tienen contraseña (hash NULL): no pueden entrar por aquí
+    if (usuario is None or usuario["contrasena_hash"] is None
+            or not check_password_hash(usuario["contrasena_hash"], contrasena)):
         return None
+    del usuario["contrasena_hash"]
+    return usuario
+
+
+def _nombre_usuario_libre(conexion, base):
+    """Devuelve `base` si no está cogido como nombre de usuario; si no, base2, base3..."""
+    base = base[:45] or "usuario"
+    nombre, n = base, 1
+    while conexion.execute(
+        "SELECT 1 FROM usuarios WHERE nombre_usuario = %s", (nombre,)
+    ).fetchone():
+        n += 1
+        nombre = f"{base}{n}"
+    return nombre
+
+
+def usuario_google(google_sub, email):
+    """Devuelve el usuario (sin el hash) que entra con Google; lo crea si es la primera vez.
+
+    1. Si ya entró antes con Google, se encuentra por su google_sub.
+    2. Si hay una cuenta con ese email sin Google, se le vincula.
+    3. Si no, se crea un usuario nuevo con el nombre sacado del email (ana@gmail.com -> ana).
+    """
+    with conectar() as conexion:
+        usuario = conexion.execute(
+            "SELECT * FROM usuarios WHERE google_sub = %s", (google_sub,)
+        ).fetchone()
+        if usuario is None:
+            usuario = conexion.execute(
+                """UPDATE usuarios SET google_sub = %s
+                   WHERE lower(email) = lower(%s) AND google_sub IS NULL RETURNING *""",
+                (google_sub, email),
+            ).fetchone()
+        if usuario is None:
+            nombre = _nombre_usuario_libre(conexion, email.split("@")[0])
+            usuario = conexion.execute(
+                """INSERT INTO usuarios (nombre_usuario, email, google_sub)
+                   VALUES (%s, %s, %s) RETURNING *""",
+                (nombre, email, google_sub),
+            ).fetchone()
     del usuario["contrasena_hash"]
     return usuario
 

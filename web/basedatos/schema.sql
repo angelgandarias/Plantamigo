@@ -7,10 +7,15 @@ CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario      INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     nombre_usuario  VARCHAR(50)  NOT NULL UNIQUE,
     email           VARCHAR(254) NOT NULL,
-    contrasena_hash VARCHAR(255) NOT NULL,  -- nunca la contraseña en claro
+    contrasena_hash VARCHAR(255),           -- nunca la contraseña en claro; NULL si entra con Google
+    google_sub      VARCHAR(255) UNIQUE,    -- id único de la cuenta de Google; NULL si no usa Google
     puntos          INTEGER      NOT NULL DEFAULT 0 CHECK (puntos >= 0),
     fecha_registro  TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
+
+--Login con Google en bases de datos creadas antes de añadirlo (no hace nada si ya está aplicado)
+ALTER TABLE usuarios ALTER COLUMN contrasena_hash DROP NOT NULL;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS google_sub VARCHAR(255) UNIQUE;
 
 --El email es único sin distinguir mayúsculas
 CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_email ON usuarios (lower(email));

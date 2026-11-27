@@ -80,6 +80,24 @@ _modulo("grove")
 _modulo("grove.grove_light_sensor_v1_2", GroveLightSensor=GroveLightSensorFalso)
 
 
+# ---------- Pantalla LCD (LED.py): grove.display.jhd1802 falso ----------
+class JHD1802Falso:
+    """Imita la pantalla LCD de 2 filas: imprime por consola lo que se escribiría."""
+
+    def clear(self):
+        pass
+
+    def setCursor(self, fila, columna):
+        pass
+
+    def write(self, texto):
+        print(f"[lcd simulado] {texto}")
+
+
+_modulo("grove.display")
+_modulo("grove.display.jhd1802", JHD1802=JHD1802Falso)
+
+
 # ---------- Buzzer: gpiozero falso ----------
 class PWMOutputDeviceFalso:
     """Imita PWMOutputDevice: avisa por consola al cambiar de nota, sin sonar."""

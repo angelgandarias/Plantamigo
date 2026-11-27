@@ -3,7 +3,11 @@ import sys
 import threading
 import time
  
-from flask import Flask, jsonify, render_template, request
+import secrets
+
+from flask import Flask, jsonify, render_template, request, session
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 
 # Rutas para poder importar "sensores" (raíz del repo) y "repertorio" (que importa
 # buzzer.py desde sensores/) al arrancar con `python web/app.py` desde cualquier sitio.
@@ -24,7 +28,7 @@ from sensores.lightSensor import leer_luz
 from sensores.moisture import abrir_bus, leer_dos_humedades, media
 from basedatos.acumulador import Acumulador, guardar_media_diaria
 from basedatos.consultas import datos_del_dia, ErrorConexionBD, ErrorConsultaBD
-from basedatos import obtener_planta
+from basedatos import obtener_planta, usuario_google
 from ciclo_solar import es_de_dia
 from asistente import responder, ErrorAsistente, HistorialNoValido
 from datetime import datetime
@@ -33,6 +37,17 @@ from sensores.LED import aviso_sed
 INTERVALO = 5 
  
 app = Flask(__name__)
+
+# --- Login con Google (OAuth2 / OpenID Connect) ---
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+# Clave para firmar la cookie de sesión. Si no está en el .env se inventa una al arrancar,
+# pero entonces todas las sesiones se pierden cada vez que se reinicia la app.
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+if not app.secret_key:
+    print("AVISO: falta FLASK_SECRET_KEY en el .env; las sesiones se perderán al reiniciar")
+    app.secret_key = secrets.token_hex(32)
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 sonando = threading.Lock()
 BUS_I2C = abrir_bus()  # ADC del hat (humedad en A2 y A4), se abre una sola vez
 
@@ -85,11 +100,11 @@ def lector_humedad_en_segundo_plano():
             ultima_humedad["humedad"] = round(humedad, 1)
             ultima_humedad["hora"] = time.time()
 
-        if humedad < UMBRAL_SECO and not sed_avisada:
-            threading.Thread(target=avisar_sed, daemon=True).start()
-            sed_avisada = True
-        elif humedad >= UMBRAL_SECO:
-            sed_avisada = False
+            if humedad < UMBRAL_SECO and not sed_avisada:
+                threading.Thread(target=avisar_sed, daemon=True).start()
+                sed_avisada = True
+            elif humedad >= UMBRAL_SECO:
+                sed_avisada = False
         time.sleep(INTERVALO)
 
 # El hilo que irá apuntando los datos cada 5 minutos
@@ -122,6 +137,58 @@ def calendar():
 @app.route("/chat")
 def chat():
     return render_template("chat.html")
+
+@app.route("/login")
+def login():
+    # El Client ID de Google es público (va en el HTML); se lee de una variable de entorno
+    return render_template("login.html", google_client_id=GOOGLE_CLIENT_ID)
+
+
+@app.route("/api/auth/google", methods=["POST"])
+def auth_google():
+    """Recibe el ID token de Google del frontend, lo valida y abre la sesión del usuario."""
+    if not GOOGLE_CLIENT_ID:
+        return jsonify(mensaje="Google login is not configured on the server"), 503
+
+    token = (request.get_json(silent=True) or {}).get("credential")
+    if not token:
+        return jsonify(mensaje="Missing Google token"), 400
+
+    # Comprueba la firma de Google, que el token es para nuestro Client ID y que no ha caducado
+    try:
+        datos = id_token.verify_oauth2_token(token, google_requests.Request(), GOOGLE_CLIENT_ID)
+    except ValueError as error:
+        print(f"[Login] Token de Google no válido: {error}")
+        return jsonify(mensaje="Invalid Google token"), 401
+    if not datos.get("email_verified"):
+        return jsonify(mensaje="Your Google email is not verified"), 403
+
+    try:
+        usuario = usuario_google(datos["sub"], datos["email"])
+    except Exception as error:
+        print(f"[BD] No se pudo crear/buscar el usuario de Google: {error}")
+        return jsonify(mensaje="Could not connect with the database"), 503
+
+    session.clear()
+    session["id_usuario"] = usuario["id_usuario"]
+    session["nombre_usuario"] = usuario["nombre_usuario"]
+    return jsonify(id_usuario=usuario["id_usuario"], nombre_usuario=usuario["nombre_usuario"],
+                   email=usuario["email"])
+
+
+@app.route("/api/auth/me")
+def auth_me():
+    """Usuario con la sesión abierta, o null si no hay sesión."""
+    if "id_usuario" not in session:
+        return jsonify(usuario=None)
+    return jsonify(usuario={"id_usuario": session["id_usuario"],
+                            "nombre_usuario": session["nombre_usuario"]})
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+def auth_logout():
+    session.clear()
+    return jsonify(mensaje="Logged out")
 
  
 @app.route("/api/temperatura")
